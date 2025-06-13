@@ -164,7 +164,7 @@ tmux kill-session -t <session_name> # Delete session
 # Steps for resolving an issue
 
 1. Create a branch without checking it out
-2. Create a worktree with the same name as the branch under workspace/
+2. Create a worktree with the same name as the branch under ./workspace/
 3. Move to that worktree
 4. Resolve the issue
 5. Verify that the issue is actually resolved (for bug fixes, implement and run reproduction tests)
