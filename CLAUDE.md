@@ -160,3 +160,18 @@ tmux kill-session -t <session_name> # Delete session
 - SSH key pair generation and management within app
 - No hardcoded server URLs or authentication data
 - Secure push notification token handling
+
+# Steps for resolving an issue
+
+1. Create a branch without checking it out
+2. Create a worktree with the same name as the branch under workspace/
+3. Move to that worktree
+4. Resolve the issue
+5. Verify that the issue is actually resolved (for bug fixes, implement and run reproduction tests)
+6. Run all tests
+7. Run lint/format checks
+8. Update documentation
+9. Push to remote
+10. Create a Pull Request
+11. Return to the original directory
+12. Delete the worktree
