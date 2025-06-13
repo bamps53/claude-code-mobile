@@ -8,19 +8,37 @@ This is a mobile client application for Claude Code, designed to provide remote 
 
 **Tech Stack:** TypeScript + React Native + Expo (EAS Build)
 
+## Implementation Status
+
+### ✅ Completed
+- Basic Expo + React Native + TypeScript project setup
+- Redux Toolkit store configuration with auth and session slices
+- Expo Router navigation with tab-based layout
+- React Native Paper Material Design integration
+- Core screens: server connection, session management, terminal interface, settings
+- Project structure following design document specifications
+
+### 🚧 In Progress / TODO
+- SSH connectivity integration (requires `react-native-ssh-sftp` or similar)
+- Tmux session management commands implementation
+- Expo Secure Store credential persistence
+- Push notification setup and server monitoring
+- Real terminal I/O streaming
+- SSH key pair generation and management
+
 ## Architecture
 
 ### Core Technologies
-- **Framework:** React Native with Expo (EAS Build for native features)
-- **Language:** TypeScript for type safety
-- **State Management:** Redux Toolkit for complex app state
-- **Navigation:** Expo Router (file-based routing)
-- **UI Components:** React Native Paper (Material Design)
-- **Communication:** SSH via `react-native-ssh-sftp` for Claude Code sessions
-- **Secure Storage:** Expo Secure Store for connection credentials
-- **Push Notifications:** Expo Notifications (FCM/APNS)
+- **Framework:** React Native with Expo (EAS Build for native features) ✅
+- **Language:** TypeScript for type safety ✅
+- **State Management:** Redux Toolkit for complex app state ✅
+- **Navigation:** Expo Router (file-based routing) ✅
+- **UI Components:** React Native Paper (Material Design) ✅
+- **Communication:** SSH via `react-native-ssh-sftp` for Claude Code sessions 🚧
+- **Secure Storage:** Expo Secure Store for connection credentials 🚧
+- **Push Notifications:** Expo Notifications (FCM/APNS) 🚧
 
-### Expected Directory Structure
+### Current Directory Structure
 ```
 /
 ├── app/                     # Expo Router screens
@@ -65,31 +83,65 @@ npx tsc --noEmit
 npx eslint . --fix
 ```
 
-## Key Implementation Details
+## Current Implementation Details
 
-### Session Management
-- Uses `tmux` commands over SSH to manage Claude Code sessions
-- `tmux new -s <session_name> -d` for creating sessions
-- `tmux ls` for listing active sessions
-- `tmux attach -t <session_name>` for connecting to sessions
+### Implemented Features
 
-### Push Notification System
-- Server-side monitoring script watches for terminal bell character (`\x07`)
-- Triggered by Claude Code's `terminal_bell` notification channel
-- Uses `tmux pipe-pane` to monitor session output streams
-- FCM/APNS integration through Expo Notifications
+#### Redux State Management
+- **AuthSlice**: Connection config, authentication status, loading states
+- **SessionSlice**: Session list, current session, terminal output, error handling
+- **Store**: Configured with TypeScript support and proper typing
 
-### SSH Authentication
-- Public key authentication preferred
-- App generates SSH key pairs internally
-- Credentials stored securely with Expo Secure Store
-- Connection details: hostname, port, username
+#### Screen Components
+- **ServerConnectionScreen**: SSH credential input form with validation
+- **SessionScreen**: Session list with creation FAB and session selection
+- **TerminalScreen**: Terminal interface with command input and special key buttons
+- **SettingsScreen**: Connection status and app configuration options
 
-### Terminal Interface
-- Real-time SSH stdout/stdin streaming
-- Special key combinations provided as buttons (Ctrl+C, etc.)
-- Chat-like interface for Claude Code interaction
-- Scrollable output view with command input field
+#### Navigation Structure
+- **Expo Router**: File-based routing with TypeScript support
+- **Tab Layout**: Material Design tabs for main navigation
+- **Stack Navigation**: Modal screens for connection and settings
+
+#### UI/UX Implementation
+- **Material Design**: React Native Paper components throughout
+- **Theme Configuration**: Centralized color scheme and typography
+- **Responsive Layout**: Proper spacing and mobile-optimized interface
+
+### Planned Implementation
+
+#### SSH Integration (Next Phase)
+- Integration with `react-native-ssh-sftp` or similar library
+- SSH key pair generation and secure storage
+- Real SSH connection establishment and management
+- Error handling for connection failures
+
+#### Tmux Session Management
+```bash
+# Commands to implement:
+tmux new -s <session_name> -d     # Create detached session
+tmux ls                           # List all sessions  
+tmux attach -t <session_name>     # Attach to session
+tmux kill-session -t <session_name> # Delete session
+```
+
+#### Terminal I/O Streaming
+- Real-time stdout/stdin relay over SSH
+- Terminal escape sequence handling
+- Command history and autocompletion
+- Special key sequence transmission (Ctrl+C, Tab, arrows)
+
+#### Security & Storage
+- Expo Secure Store integration for credentials
+- SSH private key secure generation and storage
+- Connection credential encryption
+- Biometric authentication for app access
+
+#### Push Notifications
+- Server-side monitoring script for terminal bell (`\x07`)
+- FCM/APNS token registration and management
+- Background notification handling
+- Deep linking to specific sessions
 
 ## State Management
 
