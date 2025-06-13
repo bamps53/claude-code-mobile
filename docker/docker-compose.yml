@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  ssh-server:
+    build:
+      context: ./ssh-server
+      dockerfile: Dockerfile
+    ports:
+      - "2222:2222"
+    volumes:
+      - ssh_data:/home/testuser
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2222"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - test-network
+
+  # Mock FCM service for push notification testing
+  mock-fcm:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./mock-fcm/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./mock-fcm/html:/usr/share/nginx/html:ro
+    networks:
+      - test-network
+
+volumes:
+  ssh_data:
+
+networks:
+  test-network:
+    driver: bridge
