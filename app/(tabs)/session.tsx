@@ -4,7 +4,7 @@ import { Card, Title, Paragraph, Button, FAB, Dialog, Portal, TextInput as Paper
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../src/store';
 import { Session, setCurrentSession, addSession, removeSession } from '../../src/store/sessionSlice';
-import { sshManager } from '../../src/api/websocket-ssh';
+import { nativeSSHManager } from '../../src/api/ssh-native';
 import { router } from 'expo-router';
 
 export default function SessionScreen() {
@@ -45,9 +45,9 @@ export default function SessionScreen() {
 
       let newSession: Session;
 
-      if (sshConnection.type === 'websocket' && sshManager.getConnectionStatus()) {
-        // Use WebSocket SSH manager for real session creation
-        const session = await sshManager.createSession(newSessionName.trim());
+      if (sshConnection.type === 'native' && nativeSSHManager.getConnectionStatus()) {
+        // Use native SSH manager for real session creation
+        const session = await nativeSSHManager.createSession(newSessionName.trim());
         newSession = session;
       } else {
         // Fall back to mock session creation
@@ -85,9 +85,9 @@ export default function SessionScreen() {
             try {
               const sshConnection = (global as any).sshConnection;
               
-              if (sshConnection?.type === 'websocket' && sshManager.getConnectionStatus()) {
-                // Use WebSocket SSH manager for real session deletion
-                await sshManager.killSession(session.name);
+              if (sshConnection?.type === 'native' && nativeSSHManager.getConnectionStatus()) {
+                // Use native SSH manager for real session deletion
+                await nativeSSHManager.killSession(session.name);
               }
               
               // Remove from Redux store (both WebSocket and mock modes)

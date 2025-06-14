@@ -14,7 +14,7 @@
 - ✅ **状態管理**: Redux Toolkit による認証・セッション状態管理
 - ✅ **UI/UX**: React Native Paper による Material Design 実装
 - ✅ **画面構成**: サーバー接続、セッション管理、ターミナル、設定画面
-- 🚧 **SSH統合**: 実装予定 (react-native-ssh-sftp 等)
+- ✅ **SSH統合**: WebSocket経由で実装済み (`websocket-ssh.ts`)
 - 🚧 **通知システム**: Expo Notifications 統合予定
 - 🚧 **セキュリティ**: Expo Secure Store による認証情報暗号化予定
 
@@ -39,7 +39,7 @@
 | **状態管理** | Redux Toolkit | アプリケーション全体の複雑な状態（接続情報、セッションリスト、チャット履歴など）を予測可能かつ効率的に管理するため。 () |
 | **画面遷移** | Expo Router | ファイルベースのルーティングにより、直感的で宣言的なナビゲーションを構築します。 () |
 | **UIコンポーネント** | React Native Paper | Material Designに準拠した高品質なUIコンポーネント群により、迅速で一貫性のあるUI開発を実現します。 () |
-| **API/SSH通信** | `axios` / `react-native-ssh-sftp` | HTTP通信には`axios`を利用 ()。コア機能であるSSH通信には、EAS経由で`react-native-ssh-sftp`のようなネイティブライブラリを導入します。 |
+| **API/SSH通信** | `websocket-ssh.ts` | コア機能であるSSH通信は、`src/api/websocket-ssh.ts` を使用し、バックエンドのWebSocketサーバー経由で行います。HTTP通信が必要な場合は`axios`を利用します。 |
 | **データ永続化** | Expo Secure Store | サーバーURLや認証情報などの機密情報を安全にデバイス内に保存します。 () |
 | **Push通知** | Expo Notifications | FCM (Firebase) / APNS (Apple) を利用したPush通知を容易に実装するため。 |
 
@@ -79,7 +79,7 @@
     * 🚧 **SSH接続**: 実際のSSH接続ロジック未実装
     * 🚧 **認証情報保存**: Expo Secure Store統合予定
 * **次の作業:**
-    * SSH接続ライブラリ統合
+    * WebSocketによる接続確立と認証処理
     * 公開鍵認証の実装
     * 接続エラーハンドリングの強化
 
@@ -90,11 +90,11 @@
     * ✅ **UI実装**: `app/(tabs)/session.tsx` にセッション一覧とFAB作成済み
     * ✅ **状態管理**: `src/store/sessionSlice.ts` にセッション状態管理実装
     * ✅ **ナビゲーション**: セッション選択からターミナル画面への遷移
-    * 🚧 **tmuxコマンド**: SSH経由での実際のコマンド実行未実装
+    * ✅ **tmuxコマンド**: WebSocket経由でのコマンド実行実装済み
     * 🚧 **セッション作成**: `tmux new -s <session_name> -d` 統合予定
     * 🚧 **セッション一覧**: `tmux ls` 結果パース未実装
 * **次の作業:**
-    * tmuxコマンド実行API作成
+    * WebSocketメッセージプロトコル経由でのtmux操作
     * セッション作成・削除機能
     * リアルタイムセッション状態更新
 
@@ -107,10 +107,10 @@
     * ✅ **出力表示**: スクロール可能なターミナル出力表示（monospace）
     * ✅ **特殊キー**: Ctrl+C、Tab、矢印キーボタン実装
     * ✅ **セッション表示**: 現在のセッション情報表示
-    * 🚧 **リアルタイムI/O**: SSH経由でのstdout/stdin未実装
+    * ✅ **リアルタイムI/O**: WebSocket経由でのstdout/stdin実装済み
     * 🚧 **コマンド履歴**: 上下矢印での履歴機能未実装
 * **次の作業:**
-    * SSH経由でのリアルタイム入出力
+    * WebSocket経由でのリアルタイム入出力
     * ターミナルエスケープシーケンス処理
     * コマンド履歴・自動補完機能
 
@@ -133,11 +133,11 @@
     * `app/_layout.tsx` () で接続状態をチェック。未接続なら`server-connection`画面へリダイレクト。
     * 接続情報を入力し、SSH接続を確立。成功情報を`authSlice` () に保存。
 2.  **セッション操作:**
-    * ユーザーのUI操作（例: 「新規作成」）に応じて、アプリはSSH経由で`tmux`コマンドを実行。
+    * ユーザーのUI操作（例: 「新規作成」）に応じて、アプリはWebSocket経由で`tmux`コマンド送信をリクエスト。
     * `tmux ls`コマンドの結果を`sessionSlice`（新規作成）に保存し、UIを更新。
 3.  **対話:**
-    * ユーザーがターミナル画面でコマンドを入力すると、SSHの`stdin`に書き込む。
-    * SSHの`stdout`から受信したデータをリアルタイムで画面に描画する。
+    * ユーザーがターミナル画面でコマンドを入力すると、WebSocket経由でサーバーに送信。
+    * WebSocket経由でサーバーから受信した出力データをリアルタイムで画面に描画する。
 4.  **通知:**
     * `claude code`がBEL文字を出力 → サーバー上の監視スクリプトが検知 → FCM/APNS経由でデバイスにPush通知が届く。
 

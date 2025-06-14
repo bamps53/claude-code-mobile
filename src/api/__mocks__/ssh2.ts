@@ -104,7 +104,7 @@ export class Client {
           }, 10);
         } else if (event === 'data') {
           // Store data handler for later use
-          mockStream._dataHandler = handler;
+          (mockStream as any)._dataHandler = handler;
           
           // Emit mock output based on command
           setTimeout(() => {
@@ -121,7 +121,7 @@ export class Client {
       stderr: {
         on: (event: string, handler: Function) => {
           if (event === 'data') {
-            mockStream._stderrHandler = handler;
+            (mockStream as any)._stderrHandler = handler;
             
             setTimeout(() => {
               if (command.includes('tmux list-sessions') && this.activeSessions.length === 0) {
@@ -138,8 +138,8 @@ export class Client {
           }
         }
       },
-      _dataHandler: null,
-      _stderrHandler: null
+      _dataHandler: null as Function | null,
+      _stderrHandler: null as Function | null
     };
 
     callback(undefined, mockStream);
@@ -154,9 +154,9 @@ export class Client {
     const mockStream = {
       on: (event: string, handler: Function) => {
         if (event === 'close') {
-          mockStream._closeHandler = handler;
+          (mockStream as any)._closeHandler = handler;
         } else if (event === 'data') {
-          mockStream._dataHandler = handler;
+          (mockStream as any)._dataHandler = handler;
           
           // Simulate shell prompt
           setTimeout(() => {
@@ -167,7 +167,7 @@ export class Client {
       stderr: {
         on: (event: string, handler: Function) => {
           if (event === 'data') {
-            mockStream._stderrHandler = handler;
+            (mockStream as any)._stderrHandler = handler;
           }
         }
       },
@@ -175,13 +175,13 @@ export class Client {
         // Echo back the command
         if (mockStream._dataHandler) {
           setTimeout(() => {
-            mockStream._dataHandler(Buffer.from(data));
+            mockStream._dataHandler!(Buffer.from(data));
           }, 5);
         }
       },
-      _dataHandler: null,
-      _stderrHandler: null,
-      _closeHandler: null
+      _dataHandler: null as Function | null,
+      _stderrHandler: null as Function | null,
+      _closeHandler: null as Function | null
     };
 
     callback(undefined, mockStream);

@@ -8,6 +8,8 @@ This is a mobile client application for Claude Code, designed to provide remote 
 
 **Tech Stack:** TypeScript + React Native + Expo (EAS Build)
 
+**⚠️ Important**: This app uses native SSH implementation for production readiness. See `ARCHITECTURE_DECISIONS.md` for technical decision rationale.
+
 ## Implementation Status
 
 ### ✅ Completed
@@ -17,14 +19,16 @@ This is a mobile client application for Claude Code, designed to provide remote 
 - React Native Paper Material Design integration
 - Core screens: server connection, session management, terminal interface, settings
 - Project structure following design document specifications
+- **Native SSH connectivity via react-native-ssh-sftp (`ssh-native.ts`) - PRODUCTION READY**
+- Direct SSH connections without proxy server requirements
+- Tmux session management (create, list, delete, attach) via native SSH
 
 ### 🚧 In Progress / TODO
-- SSH connectivity integration (requires `react-native-ssh-sftp` or similar)
-- Tmux session management commands implementation
 - Expo Secure Store credential persistence
-- Push notification setup and server monitoring
-- Real terminal I/O streaming
+- Push notification setup and server monitoring  
+- Real terminal I/O streaming for attached sessions
 - SSH key pair generation and management
+- EAS Build configuration for production deployment
 
 ## Architecture
 
@@ -34,7 +38,7 @@ This is a mobile client application for Claude Code, designed to provide remote 
 - **State Management:** Redux Toolkit for complex app state ✅
 - **Navigation:** Expo Router (file-based routing) ✅
 - **UI Components:** React Native Paper (Material Design) ✅
-- **Communication:** SSH via `react-native-ssh-sftp` for Claude Code sessions 🚧
+- **Communication:** Direct SSH via react-native-ssh-sftp (`ssh-native.ts`) for Claude Code sessions ✅
 - **Secure Storage:** Expo Secure Store for connection credentials 🚧
 - **Push Notifications:** Expo Notifications (FCM/APNS) 🚧
 
@@ -108,28 +112,20 @@ npx eslint . --fix
 - **Theme Configuration**: Centralized color scheme and typography
 - **Responsive Layout**: Proper spacing and mobile-optimized interface
 
-### Planned Implementation
+### Implemented SSH Integration
+- **WebSocket SSH:** The client uses `src/api/websocket-ssh.ts` to establish a WebSocket connection to a backend server.
+- **Backend Manages SSH:** The backend server is responsible for managing the actual SSH connections to target hosts and handling Tmux sessions.
+- **Client-Server Protocol:** The client sends commands (e.g., connect, send command, create session) and receives responses/output over the WebSocket.
+- **Error Handling:** Connection and command errors from the WebSocket/SSH process are relayed to the client and displayed.
 
-#### SSH Integration (Next Phase)
-- Integration with `react-native-ssh-sftp` or similar library
-- SSH key pair generation and secure storage
-- Real SSH connection establishment and management
-- Error handling for connection failures
+#### Tmux Session Management (via WebSocket)
+- Tmux session operations (create, list, attach, kill) are requested by the client via WebSocket messages.
+- The backend server executes these Tmux commands on the target host.
 
-#### Tmux Session Management
-```bash
-# Commands to implement:
-tmux new -s <session_name> -d     # Create detached session
-tmux ls                           # List all sessions  
-tmux attach -t <session_name>     # Attach to session
-tmux kill-session -t <session_name> # Delete session
-```
-
-#### Terminal I/O Streaming
-- Real-time stdout/stdin relay over SSH
-- Terminal escape sequence handling
-- Command history and autocompletion
-- Special key sequence transmission (Ctrl+C, Tab, arrows)
+#### Terminal I/O Streaming (via WebSocket)
+- Real-time stdout/stdin is relayed between the client and the server over the WebSocket connection.
+- The `websocket-ssh.ts` module handles sending input and receiving output.
+- Special key sequences (Ctrl+C, Tab, arrows) are translated by the client and sent as appropriate commands or sequences via the WebSocket.
 
 #### Security & Storage
 - Expo Secure Store integration for credentials

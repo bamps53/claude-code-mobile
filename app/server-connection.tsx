@@ -11,7 +11,7 @@ import {
   setError,
   ConnectionConfig 
 } from '../src/store/authSlice';
-import { sshManager } from '../src/api/websocket-ssh';
+import { nativeSSHManager } from '../src/api/ssh-native';
 
 export default function ServerConnectionScreen() {
   const dispatch = useDispatch();
@@ -61,75 +61,22 @@ export default function ServerConnectionScreen() {
         password: config.password,
       };
 
-      try {
-        // Try WebSocket SSH connection first
-        await sshManager.connect(sshConfig);
-        
-        // Connection successful
-        const connectionId = `${config.hostname}-${config.username}-${Date.now()}`;
-        
-        (global as any).sshConnection = {
-          id: connectionId,
-          config: config,
-          connected: true,
-          connectedAt: new Date().toISOString(),
-          type: 'websocket'
-        };
-        
-        dispatch(setConnected(true));
-        router.replace('/(tabs)/session');
-        
-      } catch (wsError) {
-        // WebSocket failed, fall back to mock mode for testing
-        console.log('WebSocket SSH connection failed, using mock mode:', wsError);
-        
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Strict validation for mock mode
-        const invalidHosts = ['invalid.example.com', 'nonexistent.test', 'fake.server', 'badhost.com'];
-        if (invalidHosts.includes(config.hostname.toLowerCase())) {
-          throw new Error(`SSH connection failed: Could not resolve hostname '${config.hostname}': Name or service not known`);
-        }
-        
-        const validPorts = [22, 2222];
-        if (!validPorts.includes(config.port)) {
-          throw new Error(`SSH connection failed: Connection refused to ${config.hostname}:${config.port}`);
-        }
-        
-        const validCredentials = [
-          { username: 'admin', password: 'admin123', hostname: 'testserver.com' },
-          { username: 'root', password: 'password123', hostname: 'myserver.com' },
-          { username: 'user', password: 'secret456', hostname: 'devserver.local' },
-        ];
-        
-        const isValidCredential = validCredentials.some(cred => 
-          cred.username === config.username && 
-          cred.password === config.password && 
-          cred.hostname === config.hostname
-        );
-        
-        if (!isValidCredential) {
-          if (!config.password || config.password.length === 0) {
-            throw new Error('SSH connection failed: No password provided');
-          }
-          throw new Error(`SSH connection failed: Permission denied (publickey,password). Authentication failed for ${config.username}@${config.hostname}`);
-        }
-        
-        // Mock connection successful
-        const connectionId = `${config.hostname}-${config.username}-${Date.now()}`;
-        
-        (global as any).sshConnection = {
-          id: connectionId,
-          config: config,
-          connected: true,
-          connectedAt: new Date().toISOString(),
-          type: 'mock'
-        };
-        
-        dispatch(setConnected(true));
-        router.replace('/(tabs)/session');
-      }
+      // Attempt native SSH connection
+      await nativeSSHManager.connect(sshConfig);
+      
+      // Connection successful
+      const connectionId = `${config.hostname}-${config.username}-${Date.now()}`;
+      
+      (global as any).sshConnection = {
+        id: connectionId,
+        config: config,
+        connected: true,
+        connectedAt: new Date().toISOString(),
+        type: 'native'
+      };
+      
+      dispatch(setConnected(true));
+      router.replace('/(tabs)/session');
       
     } catch (err) {
       dispatch(setError(err instanceof Error ? err.message : 'Connection failed'));
@@ -144,14 +91,14 @@ export default function ServerConnectionScreen() {
         <Card.Content>
           <Title>Connect to Server</Title>
           <Paragraph style={styles.description}>
-            Enter your SSH connection details to connect to a server running Claude Code.
+            Enter your SSH connection details to connect directly to your server.
           </Paragraph>
           
           <Paragraph style={styles.testInfo}>
-            🌐 Uses WebSocket SSH proxy (fallback to mock mode if server unavailable)
+            🔒 Direct SSH connection - Your credentials stay secure on your device
           </Paragraph>
           <Paragraph style={styles.testInfo}>
-            💡 Mock mode credentials: admin/admin123@testserver.com, root/password123@myserver.com, user/secret456@devserver.local
+            ⚡ Production-ready native SSH implementation
           </Paragraph>
 
           <TextInput

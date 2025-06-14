@@ -15,11 +15,11 @@ export default function SettingsScreen() {
     try {
       const sshConnection = (global as any).sshConnection;
       
-      // Disconnect WebSocket SSH manager if it was being used
-      if (sshConnection?.type === 'websocket') {
-        const { sshManager } = await import('../src/api/websocket-ssh');
-        if (sshManager.getConnectionStatus()) {
-          await sshManager.disconnect();
+      // Disconnect native SSH manager if it was being used
+      if (sshConnection?.type === 'native') {
+        const { nativeSSHManager } = await import('../src/api/ssh-native');
+        if (nativeSSHManager.getConnectionStatus()) {
+          await nativeSSHManager.disconnect();
         }
       }
       
@@ -53,7 +53,7 @@ export default function SettingsScreen() {
               />
               <List.Item
                 title="Status"
-                description={sshConnection?.connected ? `Connected (${sshConnection.type || 'unknown'} mode)` : "Disconnected"}
+                description={sshConnection?.connected ? `Connected (${sshConnection.type === 'native' ? 'Direct SSH' : sshConnection.type || 'unknown'} mode)` : "Disconnected"}
                 left={(props) => <List.Icon {...props} icon={sshConnection?.connected ? "check-circle" : "close-circle"} />}
               />
               {sshConnection?.connectedAt && (
