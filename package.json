@@ -1,12 +1,24 @@
 {
-  "name": "claude-code-mobile-temp",
+  "name": "claude-code-mobile",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "test": "node node_modules/jest/bin/jest.js",
+    "test:watch": "node node_modules/jest/bin/jest.js --watch",
+    "test:coverage": "node node_modules/jest/bin/jest.js --coverage",
+    "test:e2e": "maestro test tests/e2e/",
+    "test:e2e:smoke": "maestro test tests/e2e/smoke-test.yaml",
+    "test:e2e:welcome": "maestro test tests/e2e/welcome-flow.yaml",
+    "test:e2e:navigation": "maestro test tests/e2e/navigation-flow.yaml",
+    "test:e2e:connection": "maestro test tests/e2e/connection-flow.yaml",
+    "lint": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
   },
   "dependencies": {
     "@dylankenneally/react-native-ssh-sftp": "^1.5.20",
@@ -14,21 +26,47 @@
     "@react-navigation/native": "^7.1.10",
     "@react-navigation/stack": "^7.3.3",
     "expo": "~53.0.11",
+    "expo-dev-client": "~5.2.0",
     "expo-local-authentication": "^16.0.4",
     "expo-notifications": "^0.31.3",
     "expo-secure-store": "^14.2.3",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
     "react-native": "0.79.3",
+    "react-native-gesture-handler": "^2.26.0",
     "react-native-paper": "^5.14.5",
+    "react-native-safe-area-context": "^5.4.1",
+    "react-native-screens": "^4.11.1",
     "react-native-vector-icons": "^10.2.0",
     "react-native-webview": "^13.15.0",
     "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.27.2",
+    "@babel/preset-typescript": "^7.27.1",
+    "@react-native/metro-config": "^0.80.0",
+    "@testing-library/react-native": "^13.2.0",
     "@types/react": "~19.0.10",
+    "@typescript-eslint/eslint-plugin": "^8.34.0",
+    "@typescript-eslint/parser": "^8.34.0",
+    "eslint": "^8.57.1",
+    "eslint-config-expo": "^9.2.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.4.1",
+    "husky": "^9.1.7",
+    "jest": "^30.0.0",
+    "jest-environment-jsdom": "^30.0.0",
+    "lint-staged": "^16.1.1",
+    "prettier": "^3.5.3",
+    "react-native-web": "^0.20.0",
     "typescript": "~5.8.3"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   },
   "private": true
 }

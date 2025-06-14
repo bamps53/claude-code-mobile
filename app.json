@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "claude-code-mobile-temp",
-    "slug": "claude-code-mobile-temp",
+    "name": "claude-code-mobile",
+    "slug": "claude-code-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

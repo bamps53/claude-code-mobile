@@ -1,0 +1,32 @@
+# Maestro configuration for Claude Code Mobile
+# Configuration for E2E testing across platforms
+
+appId: host.exp.exponent
+name: "Claude Code Mobile"
+
+# Platform-specific configurations
+platforms:
+  - platform: android
+    appId: host.exp.exponent
+    
+  - platform: ios
+    appId: host.exp.exponent
+
+# Test execution settings
+includeTags: []
+excludeTags: []
+
+# Flow execution settings
+flowTimeout: 120000  # 2 minutes per flow
+elementTimeout: 15000  # 15 seconds per element
+
+# Screenshot and reporting
+onFlowStart:
+  - takeScreenshot
+
+onFlowComplete:
+  - takeScreenshot
+
+# Environment configuration
+env:
+  TEST_ENV: "e2e"

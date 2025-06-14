@@ -1,0 +1,50 @@
+# Connection Management Flow Test
+# Tests SSH connection profile creation and management
+
+appId: host.exp.exponent
+name: "Connection Management Flow"
+tags:
+  - connections
+  - ssh
+  - integration
+
+---
+
+# Launch app and navigate to connections
+- launchApp
+- tapOn: "Get Started"
+- assertVisible:
+    text: "Connections"
+    timeout: 10000
+
+# Verify empty connections state
+- takeScreenshot: "01_empty_connections.png"
+
+# Test FAB (Floating Action Button) for adding connections
+- assertVisible:
+    id: "add-connection-fab"
+    optional: true
+
+# Note: Since add connection functionality is not yet implemented,
+# we test the existing UI elements and navigation
+
+# Test connection card interactions (when connections exist)
+- runFlow:
+    when:
+      visible: "Connected"
+    then:
+      - takeScreenshot: "02_connection_card.png"
+      - assertVisible: "SSH Key"
+
+# Test navigation to Sessions when connection exists
+- runFlow:
+    when:
+      visible: "Connect"
+    then:
+      - tapOn: "Connect"
+      - wait: 2000
+      - takeScreenshot: "03_connection_attempt.png"
+
+# Navigate to sessions to test connection state
+- tapOn: "Sessions"
+- takeScreenshot: "04_sessions_after_connection.png"

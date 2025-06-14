@@ -1,0 +1,51 @@
+# Navigation Flow Test
+# Tests the main navigation between tabs and screens
+
+appId: host.exp.exponent
+name: "Main Navigation Flow"
+tags:
+  - navigation
+  - tabs
+  - smoke
+
+---
+
+# Launch app and navigate through authentication
+- launchApp
+- tapOn: "Get Started"
+
+# Wait for main app to load
+- assertVisible:
+    text: "Connections"
+    timeout: 10000
+
+# Test Connections tab
+- takeScreenshot: "01_connections_tab.png"
+- assertVisible: "Connections"
+
+# Test Sessions tab navigation
+- tapOn: "Sessions"
+- assertVisible:
+    text: "No active connection"
+    timeout: 5000
+- takeScreenshot: "02_sessions_tab.png"
+
+# Test Settings tab navigation
+- tapOn: "Settings"
+- assertVisible: "Appearance"
+- assertVisible: "Security"
+- assertVisible: "Data & Privacy"
+- takeScreenshot: "03_settings_tab.png"
+
+# Test theme switching in settings
+- scrollUntilVisible:
+    element:
+      text: "Light"
+    direction: DOWN
+- tapOn: "Dark"
+- takeScreenshot: "04_dark_theme.png"
+
+# Navigate back to Connections
+- tapOn: "Connections"
+- assertVisible: "Connections"
+- takeScreenshot: "05_back_to_connections.png"
