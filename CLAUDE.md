@@ -154,6 +154,29 @@ EAS Build is **mandatory** due to the SSH library's native dependencies. Standar
 - **Connection profile CRUD** - Add/edit/delete functionality for SSH profiles
 - **Settings screen completion** - Full implementation of preference management
 
+## Development Workflow
+
+For detailed development procedures, feature implementation phases, and quality assurance guidelines, see:
+
+📖 **[Development Workflow Guide](./docs/DEVELOPMENT_WORKFLOW.md)**
+
+### Quick Development Start
+```bash
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Develop with continuous testing
+npm test:watch
+npm run typecheck
+npm run lint
+
+# Commit (Husky auto-runs quality checks)
+git commit -m "feat: your feature description"
+
+# Push and create PR
+git push origin feature/your-feature-name
+```
+
 ## Important Notes
 
 - **EAS Build dependency**: Cannot use standard Expo Go due to native SSH library

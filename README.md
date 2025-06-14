@@ -78,6 +78,7 @@ npm run typecheck   # TypeScript validation
 ## 📖 Documentation
 
 - [Development Guide](./CLAUDE.md) - Complete development instructions
+- [Development Workflow](./docs/DEVELOPMENT_WORKFLOW.md) - Feature implementation phases and development process
 - [E2E Testing Guide](./docs/E2E_TESTING.md) - Maestro testing documentation
 - [Design Document](./docs/DESIGN_DOC.md) - Architecture and technical decisions
 - [Debugging Guide](./docs/DEBUGGING.md) - Development debugging setup
