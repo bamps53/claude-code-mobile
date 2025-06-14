@@ -14,6 +14,13 @@ export interface SSHConnection {
   privateKey?: string;
   lastConnected?: Date;
   isConnected: boolean;
+  connectionError?: string;
+}
+
+export interface SSHConnectionResult {
+  success: boolean;
+  error?: string;
+  client?: any; // Will be typed more specifically when implementing
 }
 
 export interface TmuxSession {

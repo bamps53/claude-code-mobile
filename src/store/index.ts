@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import * as SecureStore from 'expo-secure-store';
 import { SSHConnection, TmuxSession, AppSettings, AppState } from '../types';
+import { createSSHConnection, SSHClient } from '../utils/ssh';
 
 /**
  * Secure storage adapter for Zustand persist middleware
@@ -38,6 +39,12 @@ const secureStorage = {
 };
 
 /**
+ * SSH client storage for active connections
+ * @description Map of connection IDs to SSH clients
+ */
+const sshClients = new Map<string, SSHClient>();
+
+/**
  * App state store interface
  * @description Defines all state properties and actions for the application
  */
@@ -51,6 +58,7 @@ interface AppStore extends AppState {
   removeConnection: (id: string) => void;
   connectToServer: (connectionId: string) => Promise<void>;
   disconnectFromServer: (connectionId: string) => void;
+  testConnection: (connection: SSHConnection) => Promise<boolean>;
 
   // Session management actions
   refreshSessions: (connectionId: string) => Promise<void>;
@@ -132,41 +140,112 @@ export const useAppStore = create<AppStore>()(
 
       connectToServer: async (connectionId: string) => {
         const connection = get().connections.find(c => c.id === connectionId);
-        if (!connection) return;
+        if (!connection) {
+          throw new Error('Connection not found');
+        }
 
         try {
-          // TODO: Implement actual SSH connection using @dylankenneally/react-native-ssh-sftp
-          // For now, simulate connection
+          // Close existing connection if any
+          const existingClient = sshClients.get(connectionId);
+          if (existingClient) {
+            await existingClient.disconnect();
+            sshClients.delete(connectionId);
+          }
+
+          // Create new SSH connection
+          const sshClient = await createSSHConnection(connection);
+          sshClients.set(connectionId, sshClient);
+
+          // Update connection status
           set(state => ({
             connections: state.connections.map(conn =>
               conn.id === connectionId
-                ? { ...conn, isConnected: true, lastConnected: new Date() }
+                ? {
+                    ...conn,
+                    isConnected: true,
+                    lastConnected: new Date(),
+                    connectionError: undefined,
+                  }
                 : conn
             ),
             activeConnectionId: connectionId,
           }));
 
-          // Refresh sessions after connection
-          await get().refreshSessions(connectionId);
+          // Note: refreshSessions will be called separately when needed
         } catch (error) {
-          console.error('Connection failed:', error);
+          const errorMessage =
+            error instanceof Error ? error.message : 'Connection failed';
+
+          // Update connection with error state
+          set(state => ({
+            connections: state.connections.map(conn =>
+              conn.id === connectionId
+                ? {
+                    ...conn,
+                    isConnected: false,
+                    connectionError: errorMessage,
+                  }
+                : conn
+            ),
+          }));
+
+          console.error('SSH connection failed:', error);
           throw error;
         }
       },
 
-      disconnectFromServer: (connectionId: string) => {
-        set(state => ({
-          connections: state.connections.map(conn =>
-            conn.id === connectionId ? { ...conn, isConnected: false } : conn
-          ),
-          activeConnectionId:
-            state.activeConnectionId === connectionId
-              ? undefined
-              : state.activeConnectionId,
-          sessions: state.sessions.filter(
-            session => session.connectionId !== connectionId
-          ),
-        }));
+      disconnectFromServer: async (connectionId: string) => {
+        try {
+          // Close SSH connection
+          const sshClient = sshClients.get(connectionId);
+          if (sshClient) {
+            await sshClient.disconnect();
+            sshClients.delete(connectionId);
+          }
+
+          // Update state
+          set(state => ({
+            connections: state.connections.map(conn =>
+              conn.id === connectionId
+                ? { ...conn, isConnected: false, connectionError: undefined }
+                : conn
+            ),
+            activeConnectionId:
+              state.activeConnectionId === connectionId
+                ? undefined
+                : state.activeConnectionId,
+            sessions: state.sessions.filter(
+              session => session.connectionId !== connectionId
+            ),
+          }));
+        } catch (error) {
+          console.warn('Error during disconnect:', error);
+          // Force update state even if disconnect fails
+          set(state => ({
+            connections: state.connections.map(conn =>
+              conn.id === connectionId ? { ...conn, isConnected: false } : conn
+            ),
+            activeConnectionId:
+              state.activeConnectionId === connectionId
+                ? undefined
+                : state.activeConnectionId,
+            sessions: state.sessions.filter(
+              session => session.connectionId !== connectionId
+            ),
+          }));
+        }
+      },
+
+      testConnection: async (connection: SSHConnection) => {
+        try {
+          const sshClient = await createSSHConnection(connection);
+          await sshClient.executeCommand('echo "test"');
+          await sshClient.disconnect();
+          return true;
+        } catch (error) {
+          console.error('Connection test failed:', error);
+          return false;
+        }
       },
 
       // Session management actions
@@ -268,18 +347,32 @@ export const useAppStore = create<AppStore>()(
       },
 
       // Terminal actions
-      sendCommand: (sessionId: string, command: string) => {
-        // TODO: Implement actual command sending via SSH
-        console.log(`Sending command to session ${sessionId}:`, command);
+      sendCommand: async (sessionId: string, command: string) => {
+        const session = get().sessions.find(s => s.id === sessionId);
+        if (!session) {
+          throw new Error('Session not found');
+        }
 
-        // Update session last activity
-        set(state => ({
-          sessions: state.sessions.map(session =>
-            session.id === sessionId
-              ? { ...session, lastActivity: new Date() }
-              : session
-          ),
-        }));
+        const sshClient = sshClients.get(session.connectionId);
+        if (!sshClient) {
+          throw new Error('SSH connection not available');
+        }
+
+        try {
+          // Send command to tmux session
+          const tmuxCommand = `tmux send-keys -t "${session.name}" "${command}" Enter`;
+          await sshClient.executeCommand(tmuxCommand);
+
+          // Update session last activity
+          set(state => ({
+            sessions: state.sessions.map(s =>
+              s.id === sessionId ? { ...s, lastActivity: new Date() } : s
+            ),
+          }));
+        } catch (error) {
+          console.error('Failed to send command:', error);
+          throw error;
+        }
       },
 
       // Settings actions
