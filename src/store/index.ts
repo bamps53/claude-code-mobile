@@ -8,6 +8,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import * as SecureStore from 'expo-secure-store';
 import { SSHConnection, TmuxSession, AppSettings, AppState } from '../types';
 import { createSSHConnection, SSHClient } from '../utils/ssh';
+import { TmuxManager } from '../utils/tmux';
 
 /**
  * Secure storage adapter for Zustand persist middleware
@@ -43,6 +44,12 @@ const secureStorage = {
  * @description Map of connection IDs to SSH clients
  */
 const sshClients = new Map<string, SSHClient>();
+
+/**
+ * Tmux manager storage for active connections
+ * @description Map of connection IDs to tmux managers
+ */
+const tmuxManagers = new Map<string, TmuxManager>();
 
 /**
  * App state store interface
@@ -156,6 +163,10 @@ export const useAppStore = create<AppStore>()(
           const sshClient = await createSSHConnection(connection);
           sshClients.set(connectionId, sshClient);
 
+          // Create tmux manager for this connection
+          const tmuxManager = new TmuxManager(sshClient, connectionId);
+          tmuxManagers.set(connectionId, tmuxManager);
+
           // Update connection status
           set(state => ({
             connections: state.connections.map(conn =>
@@ -171,7 +182,8 @@ export const useAppStore = create<AppStore>()(
             activeConnectionId: connectionId,
           }));
 
-          // Note: refreshSessions will be called separately when needed
+          // Refresh sessions after successful connection
+          await get().refreshSessions(connectionId);
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : 'Connection failed';
@@ -202,6 +214,9 @@ export const useAppStore = create<AppStore>()(
             await sshClient.disconnect();
             sshClients.delete(connectionId);
           }
+
+          // Clean up tmux manager
+          tmuxManagers.delete(connectionId);
 
           // Update state
           set(state => ({
@@ -254,33 +269,21 @@ export const useAppStore = create<AppStore>()(
         if (!connection || !connection.isConnected) return;
 
         try {
-          // TODO: Implement actual tmux session listing
-          // For now, simulate with mock data
-          const mockSessions: TmuxSession[] = [
-            {
-              id: 'session-1',
-              name: 'claude-code-main',
-              created: new Date(Date.now() - 3600000),
-              lastActivity: new Date(Date.now() - 300000),
-              windowCount: 2,
-              isActive: true,
-              connectionId,
-            },
-            {
-              id: 'session-2',
-              name: 'development',
-              created: new Date(Date.now() - 7200000),
-              lastActivity: new Date(Date.now() - 1800000),
-              windowCount: 1,
-              isActive: false,
-              connectionId,
-            },
-          ];
+          const tmuxManager = tmuxManagers.get(connectionId);
+          if (!tmuxManager) {
+            throw new Error('Tmux manager not found for connection');
+          }
 
+          // Get actual tmux sessions from server
+          const sessions = await tmuxManager.refreshSessions();
+
+          // Update store with real session data
           set(state => ({
             sessions: [
+              // Remove existing sessions for this connection
               ...state.sessions.filter(s => s.connectionId !== connectionId),
-              ...mockSessions,
+              // Add fresh session data
+              ...sessions,
             ],
           }));
         } catch (error) {
@@ -296,23 +299,18 @@ export const useAppStore = create<AppStore>()(
         }
 
         try {
-          // TODO: Implement actual tmux session creation
-          const sessionName = name || `session-${Date.now()}`;
-          const newSession: TmuxSession = {
-            id: `session-${Date.now()}`,
-            name: sessionName,
-            created: new Date(),
-            lastActivity: new Date(),
-            windowCount: 1,
-            isActive: true,
-            connectionId,
-          };
+          const tmuxManager = tmuxManagers.get(connectionId);
+          if (!tmuxManager) {
+            throw new Error('Tmux manager not found for connection');
+          }
 
-          set(state => ({
-            sessions: [...state.sessions, newSession],
-          }));
+          // Create actual tmux session
+          const sessionName = await tmuxManager.createSession(name);
 
-          return newSession.id;
+          // Refresh sessions to get updated list including the new session
+          await get().refreshSessions(connectionId);
+
+          return `${connectionId}-${sessionName}`;
         } catch (error) {
           console.error('Failed to create session:', error);
           throw error;
@@ -334,7 +332,21 @@ export const useAppStore = create<AppStore>()(
 
       killSession: async (sessionId: string) => {
         try {
-          // TODO: Implement actual tmux session killing
+          // Find the session to get connection info
+          const session = get().sessions.find(s => s.id === sessionId);
+          if (!session) {
+            throw new Error('Session not found');
+          }
+
+          const tmuxManager = tmuxManagers.get(session.connectionId);
+          if (!tmuxManager) {
+            throw new Error('Tmux manager not found for connection');
+          }
+
+          // Kill actual tmux session
+          await tmuxManager.killSession(session.name);
+
+          // Update store state
           set(state => ({
             sessions: state.sessions.filter(s => s.id !== sessionId),
             activeSessionId:
@@ -353,15 +365,14 @@ export const useAppStore = create<AppStore>()(
           throw new Error('Session not found');
         }
 
-        const sshClient = sshClients.get(session.connectionId);
-        if (!sshClient) {
-          throw new Error('SSH connection not available');
+        const tmuxManager = tmuxManagers.get(session.connectionId);
+        if (!tmuxManager) {
+          throw new Error('Tmux manager not available');
         }
 
         try {
-          // Send command to tmux session
-          const tmuxCommand = `tmux send-keys -t "${session.name}" "${command}" Enter`;
-          await sshClient.executeCommand(tmuxCommand);
+          // Send command to tmux session through manager
+          await tmuxManager.sendCommand(session.name, command);
 
           // Update session last activity
           set(state => ({
