@@ -31,7 +31,9 @@ jest.mock('expo-router', () => ({
 }));
 
 // Mock React Native modules
-jest.mock('react-native/Libraries/Animated/NativeAnimatedHelper');
+jest.mock('@react-native/virtualized-lists/node_modules/react-native/Libraries/Animated/NativeAnimatedHelper', () => ({
+  // Empty mock implementation
+}), { virtual: true });
 
 // Mock React Native Paper
 jest.mock('react-native-paper', () => {

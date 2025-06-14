@@ -9,11 +9,35 @@ import { disconnect } from '../src/store/authSlice';
 export default function SettingsScreen() {
   const dispatch = useDispatch();
   const { isConnected, connectionConfig } = useSelector((state: RootState) => state.auth);
+  const { sessions } = useSelector((state: RootState) => state.session);
 
-  const handleDisconnect = () => {
-    dispatch(disconnect());
-    router.replace('/server-connection');
+  const handleDisconnect = async () => {
+    try {
+      const sshConnection = (global as any).sshConnection;
+      
+      // Disconnect WebSocket SSH manager if it was being used
+      if (sshConnection?.type === 'websocket') {
+        const { sshManager } = await import('../src/api/websocket-ssh');
+        if (sshManager.getConnectionStatus()) {
+          await sshManager.disconnect();
+        }
+      }
+      
+      // Clear global SSH connection
+      (global as any).sshConnection = null;
+      dispatch(disconnect());
+      router.replace('/server-connection');
+    } catch (error) {
+      console.error('Disconnect error:', error);
+      // Force disconnect even if there's an error
+      (global as any).sshConnection = null;
+      dispatch(disconnect());
+      router.replace('/server-connection');
+    }
   };
+
+  // Get SSH connection info
+  const sshConnection = (global as any).sshConnection;
 
   return (
     <View style={styles.container}>
@@ -29,8 +53,20 @@ export default function SettingsScreen() {
               />
               <List.Item
                 title="Status"
-                description="Connected"
-                left={(props) => <List.Icon {...props} icon="check-circle" />}
+                description={sshConnection?.connected ? `Connected (${sshConnection.type || 'unknown'} mode)` : "Disconnected"}
+                left={(props) => <List.Icon {...props} icon={sshConnection?.connected ? "check-circle" : "close-circle"} />}
+              />
+              {sshConnection?.connectedAt && (
+                <List.Item
+                  title="Connected Since"
+                  description={new Date(sshConnection.connectedAt).toLocaleString()}
+                  left={(props) => <List.Icon {...props} icon="clock" />}
+                />
+              )}
+              <List.Item
+                title="Active Sessions"
+                description={`${sessions.length} session${sessions.length !== 1 ? 's' : ''}`}
+                left={(props) => <List.Icon {...props} icon="console" />}
               />
               <Button
                 mode="contained"

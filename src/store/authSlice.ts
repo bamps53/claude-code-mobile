@@ -5,6 +5,7 @@ export interface ConnectionConfig {
   port: number;
   username: string;
   privateKey?: string;
+  password?: string;
 }
 
 interface AuthState {
@@ -12,6 +13,8 @@ interface AuthState {
   connectionConfig: ConnectionConfig | null;
   isConnecting: boolean;
   error: string | null;
+  connectionStatus: 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';
+  lastConnected: string | null;
 }
 
 const initialState: AuthState = {
@@ -19,6 +22,8 @@ const initialState: AuthState = {
   connectionConfig: null,
   isConnecting: false,
   error: null,
+  connectionStatus: 'idle',
+  lastConnected: null,
 };
 
 const authSlice = createSlice({
@@ -30,16 +35,20 @@ const authSlice = createSlice({
     },
     setConnecting: (state, action: PayloadAction<boolean>) => {
       state.isConnecting = action.payload;
+      state.connectionStatus = action.payload ? 'connecting' : 'idle';
     },
     setConnected: (state, action: PayloadAction<boolean>) => {
       state.isConnected = action.payload;
+      state.connectionStatus = action.payload ? 'connected' : 'disconnected';
       if (action.payload) {
         state.error = null;
+        state.lastConnected = new Date().toISOString();
       }
     },
     setError: (state, action: PayloadAction<string>) => {
       state.error = action.payload;
       state.isConnecting = false;
+      state.connectionStatus = 'error';
     },
     clearError: (state) => {
       state.error = null;
@@ -48,6 +57,8 @@ const authSlice = createSlice({
       state.isConnected = false;
       state.connectionConfig = null;
       state.error = null;
+      state.connectionStatus = 'disconnected';
+      state.isConnecting = false;
     },
   },
 });

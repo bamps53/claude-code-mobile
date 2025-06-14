@@ -15,7 +15,7 @@ describe('SSH Connection Management', () => {
   beforeEach(() => {
     sshManager = new SSHConnectionManager();
     validConfig = {
-      host: 'test.example.com',
+      host: 'valid.example.com',
       port: 22,
       username: 'testuser',
       password: 'testpass'
@@ -38,7 +38,7 @@ describe('SSH Connection Management', () => {
 
     it('should connect with private key authentication', async () => {
       const keyConfig = {
-        host: 'test.example.com',
+        host: 'valid.example.com',
         port: 22,
         username: 'testuser',
         privateKey: '-----BEGIN RSA PRIVATE KEY----- mock key content -----END RSA PRIVATE KEY-----'

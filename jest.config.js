@@ -10,7 +10,8 @@ module.exports = {
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/integration-tests/'
+    '/integration-tests/',
+    '/workspace/'
   ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
@@ -30,9 +31,25 @@ module.exports = {
     }
   },
   moduleNameMapper: {
-    '^@/(.*)$': '<rootDir>/src/$1'
+    '^@/(.*)$': '<rootDir>/src/$1',
+    // Handle workspace module imports for cross-workspace testing
+    '^workspace/(.*)$': '<rootDir>/workspace/$1',
+    // Directly mock troublesome modules
+    '^.*/ssh-client$': '<rootDir>/test/mocks/ssh-client.js',
+    // Mock ssh2 library for testing
+    '^ssh2$': '<rootDir>/src/api/__mocks__/ssh2.ts'
   },
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  moduleDirectories: ['node_modules', '<rootDir>/src', '<rootDir>'],
   transformIgnorePatterns: [
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)'
-  ]
+  ],
+  // Mock all native modules
+  setupFiles: ['<rootDir>/test/jest.setup.js'],
+  testEnvironment: 'node',
+  globals: {
+    'ts-jest': {
+      isolatedModules: true
+    }
+  }
 };

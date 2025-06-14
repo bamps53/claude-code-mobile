@@ -3,17 +3,11 @@
  * Handles SSH connections, session management, and terminal I/O
  */
 
-// Use mock for testing, replace with actual library in production
-let SSHClient: any;
-type SSHClientType = any; // Define the type based on the imported value
-try {
-  const sshModule = require('react-native-ssh-sftp');
-  SSHClient = sshModule.SSHClient;
-} catch {
-  // Fallback to mock for testing
-  const mockModule = require('./__mocks__/react-native-ssh-sftp');
-  SSHClient = mockModule.SSHClient;
-}
+import { Client as SSH2Client, ConnectConfig, ClientChannel } from 'ssh2';
+
+// Real SSH2 implementation
+const SSHClient = SSH2Client;
+type SSHClientType = SSH2Client;
 
 export interface SSHConfig {
   host: string;
@@ -43,6 +37,7 @@ export class SSHConnectionManager {
   private config: SSHConfig | null = null;
   private outputListeners: Array<(output: TerminalOutput) => void> = [];
   private connectionListeners: Array<(connected: boolean) => void> = [];
+  private currentStream: ClientChannel | null = null;
 
   /**
    * Establish SSH connection to the server
@@ -50,26 +45,44 @@ export class SSHConnectionManager {
    * @returns Promise that resolves when connection is established
    */
   async connect(config: SSHConfig): Promise<void> {
-    try {
-      this.config = config;
-      this.client = new SSHClient();
+    return new Promise((resolve, reject) => {
+      try {
+        this.config = config;
+        this.client = new SSHClient();
 
-      const connectionOptions = {
-        host: config.host,
-        port: config.port,
-        username: config.username,
-        ...(config.password ? { password: config.password } : {}),
-        ...(config.privateKey ? { privateKey: config.privateKey } : {}),
-      };
+        const connectionOptions: ConnectConfig = {
+          host: config.host,
+          port: config.port,
+          username: config.username,
+          ...(config.password ? { password: config.password } : {}),
+          ...(config.privateKey ? { privateKey: config.privateKey } : {}),
+          readyTimeout: 30000, // 30 second timeout
+        };
 
-      await this.client.connect(connectionOptions);
-      this.isConnected = true;
-      this.notifyConnectionListeners(true);
-    } catch (error) {
-      this.isConnected = false;
-      this.notifyConnectionListeners(false);
-      throw new Error(`SSH connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+        this.client.on('ready', () => {
+          this.isConnected = true;
+          this.notifyConnectionListeners(true);
+          resolve();
+        });
+
+        this.client.on('error', (error: Error) => {
+          this.isConnected = false;
+          this.notifyConnectionListeners(false);
+          reject(new Error(`SSH connection failed: ${error.message}`));
+        });
+
+        this.client.on('close', () => {
+          this.isConnected = false;
+          this.notifyConnectionListeners(false);
+        });
+
+        this.client.connect(connectionOptions);
+      } catch (error) {
+        this.isConnected = false;
+        this.notifyConnectionListeners(false);
+        reject(new Error(`SSH connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`));
+      }
+    });
   }
 
   /**
@@ -77,7 +90,7 @@ export class SSHConnectionManager {
    */
   async disconnect(): Promise<void> {
     if (this.client) {
-      await this.client.disconnect();
+      this.client.end();
       this.client = null;
     }
     this.isConnected = false;
@@ -100,27 +113,55 @@ export class SSHConnectionManager {
       throw new Error('SSH connection not established');
     }
 
-    try {
-      const result = await this.client!.execute('tmux list-sessions -F "#{session_name}|#{session_created}|#{session_activity}|#{session_attached}"');
-      
-      return result.split('\n')
-        .filter((line: string) => line.trim())
-        .map((line: string) => {
-          const [name, created, activity, attached] = line.split('|');
-          return {
-            id: name,
-            name,
-            created: new Date(parseInt(created) * 1000),
-            lastActivity: new Date(parseInt(activity) * 1000),
-            isAttached: attached === '1',
-          };
+    return new Promise((resolve, reject) => {
+      this.client!.exec('tmux list-sessions -F "#{session_name}|#{session_created}|#{session_activity}|#{session_attached}"', (err: Error | undefined, stream: ClientChannel) => {
+        if (err) {
+          reject(new Error(`Failed to execute command: ${err.message}`));
+          return;
+        }
+
+        let output = '';
+        let errorOutput = '';
+
+        stream.on('close', (code: number) => {
+          if (code === 1 && errorOutput.includes('no server running')) {
+            resolve([]); // No sessions exist
+            return;
+          }
+          
+          if (code !== 0) {
+            reject(new Error(`Command failed with code ${code}: ${errorOutput}`));
+            return;
+          }
+
+          try {
+            const sessions = output.split('\n')
+              .filter((line: string) => line.trim())
+              .map((line: string) => {
+                const [name, created, activity, attached] = line.split('|');
+                return {
+                  id: name,
+                  name,
+                  created: new Date(parseInt(created) * 1000),
+                  lastActivity: new Date(parseInt(activity) * 1000),
+                  isAttached: attached === '1',
+                };
+              });
+            resolve(sessions);
+          } catch (parseError) {
+            reject(new Error(`Failed to parse session list: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`));
+          }
         });
-    } catch (error) {
-      if (error instanceof Error && error.message.includes('no server running')) {
-        return []; // No sessions exist
-      }
-      throw new Error(`Failed to list sessions: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+
+        stream.on('data', (data: Buffer) => {
+          output += data.toString();
+        });
+
+        stream.stderr.on('data', (data: Buffer) => {
+          errorOutput += data.toString();
+        });
+      });
+    });
   }
 
   /**
@@ -133,21 +174,42 @@ export class SSHConnectionManager {
       throw new Error('SSH connection not established');
     }
 
-    try {
-      await this.client!.execute(`tmux new-session -d -s "${sessionName}"`);
-      
-      // Get session details
-      const sessions = await this.listSessions();
-      const newSession = sessions.find(s => s.name === sessionName);
-      
-      if (!newSession) {
-        throw new Error('Session created but not found in list');
-      }
-      
-      return newSession;
-    } catch (error) {
-      throw new Error(`Failed to create session: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    return new Promise((resolve, reject) => {
+      this.client!.exec(`tmux new-session -d -s "${sessionName}"`, (err: Error | undefined, stream: ClientChannel) => {
+        if (err) {
+          reject(new Error(`Failed to create session: ${err.message}`));
+          return;
+        }
+
+        let errorOutput = '';
+
+        stream.on('close', async (code: number) => {
+          if (code !== 0) {
+            reject(new Error(`Failed to create session: ${errorOutput}`));
+            return;
+          }
+
+          try {
+            // Get session details
+            const sessions = await this.listSessions();
+            const newSession = sessions.find(s => s.name === sessionName);
+            
+            if (!newSession) {
+              reject(new Error('Session created but not found in list'));
+              return;
+            }
+            
+            resolve(newSession);
+          } catch (listError) {
+            reject(new Error(`Session created but failed to retrieve details: ${listError instanceof Error ? listError.message : 'Unknown error'}`));
+          }
+        });
+
+        stream.stderr.on('data', (data: Buffer) => {
+          errorOutput += data.toString();
+        });
+      });
+    });
   }
 
   /**
@@ -159,27 +221,43 @@ export class SSHConnectionManager {
       throw new Error('SSH connection not established');
     }
 
-    try {
-      // Start interactive shell with tmux attach
-      await this.client!.executeInteractive(`tmux attach-session -t "${sessionName}"`, {
-        onData: (data: string) => {
+    return new Promise((resolve, reject) => {
+      this.client!.shell((err: Error | undefined, stream: ClientChannel) => {
+        if (err) {
+          reject(new Error(`Failed to create shell: ${err.message}`));
+          return;
+        }
+
+        // Store the stream for sending commands later
+        this.currentStream = stream;
+
+        // Set up data handlers
+        stream.on('data', (data: Buffer) => {
           this.notifyOutputListeners({
-            data,
+            data: data.toString(),
             timestamp: new Date(),
             type: 'stdout',
           });
-        },
-        onError: (error: string) => {
+        });
+
+        stream.stderr.on('data', (data: Buffer) => {
           this.notifyOutputListeners({
-            data: error,
+            data: data.toString(),
             timestamp: new Date(),
             type: 'stderr',
           });
-        },
+        });
+
+        stream.on('close', () => {
+          this.currentStream = null;
+        });
+
+        // Send tmux attach command
+        stream.write(`tmux attach-session -t "${sessionName}"\n`);
+        
+        resolve();
       });
-    } catch (error) {
-      throw new Error(`Failed to attach to session: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    });
   }
 
   /**
@@ -191,8 +269,12 @@ export class SSHConnectionManager {
       throw new Error('SSH connection not established');
     }
 
+    if (!this.currentStream) {
+      throw new Error('No active shell session');
+    }
+
     try {
-      await this.client!.writeToShell(command + '\n');
+      this.currentStream.write(command + '\n');
     } catch (error) {
       throw new Error(`Failed to send command: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -205,6 +287,10 @@ export class SSHConnectionManager {
   async sendKeySequence(sequence: string): Promise<void> {
     if (!this.isConnectionActive()) {
       throw new Error('SSH connection not established');
+    }
+
+    if (!this.currentStream) {
+      throw new Error('No active shell session');
     }
 
     const sequences: Record<string, string> = {
@@ -221,7 +307,7 @@ export class SSHConnectionManager {
     }
 
     try {
-      await this.client!.writeToShell(keyCode);
+      this.currentStream.write(keyCode);
     } catch (error) {
       throw new Error(`Failed to send key sequence: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -236,11 +322,28 @@ export class SSHConnectionManager {
       throw new Error('SSH connection not established');
     }
 
-    try {
-      await this.client!.execute(`tmux kill-session -t "${sessionName}"`);
-    } catch (error) {
-      throw new Error(`Failed to kill session: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    return new Promise((resolve, reject) => {
+      this.client!.exec(`tmux kill-session -t "${sessionName}"`, (err: Error | undefined, stream: ClientChannel) => {
+        if (err) {
+          reject(new Error(`Failed to kill session: ${err.message}`));
+          return;
+        }
+
+        let errorOutput = '';
+
+        stream.on('close', (code: number) => {
+          if (code !== 0) {
+            reject(new Error(`Failed to kill session: ${errorOutput}`));
+            return;
+          }
+          resolve();
+        });
+
+        stream.stderr.on('data', (data: Buffer) => {
+          errorOutput += data.toString();
+        });
+      });
+    });
   }
 
   /**
