@@ -1,36 +1,4 @@
 {
-  "expo": {
-    "name": "claude-code-mobile",
-    "slug": "claude-code-mobile",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "scheme": "claude-code-mobile",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "dba59e03-d27f-47b4-8a72-a911f5083db1"
-      }
-    },
-    "owner": "bamps53"
-  }
+  "name": "ClaudeCodeMobile",
+  "displayName": "Claude Code Mobile"
 }

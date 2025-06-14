@@ -1,9 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface ConnectionConfig {
-  hostname: string;
+  host: string;
   port: number;
   username: string;
+  authMethod: 'password' | 'key';
   privateKey?: string;
   password?: string;
 }
@@ -53,6 +54,13 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    logout: (state) => {
+      state.isConnected = false;
+      state.connectionConfig = null;
+      state.error = null;
+      state.connectionStatus = 'disconnected';
+      state.isConnecting = false;
+    },
     disconnect: (state) => {
       state.isConnected = false;
       state.connectionConfig = null;
@@ -69,6 +77,7 @@ export const {
   setConnected,
   setError,
   clearError,
+  logout,
   disconnect,
 } = authSlice.actions;
 
