@@ -1,168 +1,116 @@
-# Claude Code モバイルクライアント 設計書
+# Claude Code Mobile Client: DESIGN_DOC.md
 
-## 1. プロジェクト概要
+- **Version**: 1.0
+- **Last Updated**: June 15, 2025
 
-### 目的
-リモートサーバー上で動作する`claude code`セッションに、モバイルデバイスから安全にアクセスできるアプリケーションを開発する。
+## 1. Overview
 
-### 主要価値提案
-- **場所を問わないアクセス**: スマートフォンからリモート開発環境へのアクセス
-- **非同期ワークフロー**: Claude Codeの作業完了時にプッシュ通知で即座に確認
-- **複数セッション管理**: 複数の開発タスクを並行して効率的に管理
+### 1.1. Objective
+To develop a secure and robust mobile application for iOS and Android that provides developers with on-the-go access to `claude code` sessions running on a remote server.
 
-## 2. 技術要件と制約
+### 1.2. Key Value Propositions
+- **Anywhere Access**: Connect to a remote development environment directly from a smartphone.
+- **Asynchronous Workflows**: Receive real-time push notifications upon task completion within `claude code`.
+- **Multi-Session Management**: Efficiently manage multiple parallel development tasks and `tmux` sessions.
 
-### 2.1 基本要件
-- **プラットフォーム**: iOS、Android（React Native）
-- **接続方式**: SSH（直接接続）
-- **セッション管理**: tmux セッション
-- **セキュリティ**: エンドツーエンド暗号化、認証情報のローカル暗号化保存
+## 2. Technical Requirements & Constraints
 
-### 2.2 技術制約
-- **ネイティブ機能要求**: SSH接続のためEAS Build必須
-- **オフライン制約**: SSH接続必須のためオフライン機能限定的
-- **パフォーマンス**: モバイルネットワーク環境での最適化必要
+### 2.1. Core Requirements
+- **Platform**: iOS & Android, built with React Native.
+- **Connection Protocol**: Direct SSH connection.
+- **Session Management**: The application will interface with `tmux` sessions on the remote server.
+- **Security**: Mandates end-to-end encryption for data in transit and strong local encryption for credentials at rest.
 
-## 3. アーキテクチャ設計
+### 2.2. Technical Constraints
+- **Native Module Requirement**: EAS Build is mandatory due to the native dependencies of the core SSH library.
+- **Offline Functionality**: Limited to managing local profiles. Core features require an active internet connection.
+- **Performance**: Must be optimized for potentially unstable and low-bandwidth mobile network conditions.
 
-### 3.1 技術スタック
+## 3. System Architecture & Technology Stack
 
-| 領域 | 技術 | 選定理由 |
-|------|------|----------|
-| **フレームワーク** | React Native + Expo | クロスプラットフォーム開発効率 |
-| **言語** | TypeScript | 型安全性と開発効率 |
-| **状態管理** | Redux Toolkit | 複雑な状態の予測可能な管理 |
-| **ナビゲーション** | Expo Router | ファイルベースルーティング |
-| **UI ライブラリ** | React Native Paper | Material Design準拠 |
-| **SSH 通信** | react-native-ssh-sftp | ネイティブSSH接続 |
-| **セキュア ストレージ** | Expo Secure Store | 認証情報の暗号化保存 |
-| **プッシュ通知** | Expo Notifications | FCM/APNS統合 |
+This section outlines the selected technologies for building, testing, and deploying the application.
 
-### 3.2 アプリケーション構造
+### 3.1. Application Architecture
 
-```
-/
-├── app/                     # Expo Router screens
-│   ├── (tabs)/             # メインタブナビゲーション
-│   │   ├── _layout.tsx     # タブレイアウト
-│   │   ├── sessions.tsx    # セッション管理
-│   │   └── terminal.tsx    # ターミナルインターフェース
-│   ├── _layout.tsx         # ルートレイアウト
-│   ├── connection.tsx      # SSH接続設定
-│   └── settings.tsx        # アプリ設定
-├── src/
-│   ├── api/               # SSH API層
-│   ├── components/        # 再利用可能コンポーネント
-│   ├── hooks/            # カスタムフック
-│   ├── store/            # Redux ストア
-│   ├── types/            # TypeScript型定義
-│   └── utils/            # ユーティリティ関数
-└── assets/               # 静的リソース
-```
+| Category | Technology | Why? |
+| :--- | :--- | :--- |
+| **UI Components** | **React Native Paper** | Material Design compliance ensures an intuitive UI. Provides a rich set of components and powerful theming (e.g., dark mode). |
+| **State Management** | **Zustand** | A simple, scalable, and performant state management solution. Ideal for managing multiple session states without boilerplate. |
+| **Navigation** | **React Navigation** | The de-facto standard for navigation in React Native. Well-documented, feature-rich, and integrates seamlessly with Expo. |
+| **SSH Connection** | **`@dylankenneally/react-native-ssh-sftp`** | A robust library to handle the core SSH and command execution functionalities required for this project. |
+| **Terminal UI** | **WebView + xterm.js** | The most powerful method to render a full-featured terminal. `xterm.js` is a battle-tested emulator (used in VS Code) capable of handling `tmux`. |
+| **Secure Storage** | **Expo SecureStore** | For storing sensitive credentials. It uses the native OS secure enclaves (iOS Keychain, Android Keystore) for maximum security. |
+| **Local Auth**| **Expo Local Authentication**| To implement secondary, app-level security (PIN/Biometrics) as per the security design. |
+| **Push Notifications**| **Expo Notifications** & **FCM/APNS** | `Expo Notifications` for handling incoming notifications on the client. Requires integration with FCM/APNS for real-time delivery from a server-side listener. |
 
-## 4. 機能設計
+### 3.2. Testing Strategy
 
-### 4.1 SSH接続管理
-**目的**: 安全なサーバー接続の確立と管理
+| Category | Technology | Why? |
+| :--- | :--- | :--- |
+| **Unit/Integration** | **Jest + React Native Testing Library** | The industry standard for testing React Native components and logic. Promotes user-centric tests that are resilient to refactoring. |
+| **End-to-End (E2E)** | **Detox** | A powerful gray-box testing framework that ensures stable and fast E2E tests by synchronizing with the app's internal state. |
 
-**機能要件**:
-- パスワード認証とSSHキー認証の両方対応
-- 接続情報の暗号化保存
-- 接続状態の監視と自動再接続
-- 複数サーバー7への接続プロファイル管理
+### 3.3. Developer Experience (DX) & Tooling
 
-### 4.2 tmuxセッション管理
-**目的**: リモートサーバー上のClaude Codeセッションの管理
+| Category | Technology | Why? |
+| :--- | :--- | :--- |
+| **Linting/Formatting**| **ESLint & Prettier** | To enforce consistent code style and catch potential errors early. Automated with Husky on pre-commit hooks. |
+| **CI/CD** | **GitHub Actions + EAS Build** | To automate testing and building. EAS Build is essential for creating builds with our custom native dependencies. |
+| **Debugging** | **Flipper** | The recommended debugging platform. It enables live inspection of the UI layout, state, logs, and more, drastically improving the debugging workflow. |
 
-**機能要件**:
-- セッション一覧表示（作成日時、最終アクティビティ）
-- 新規セッション作成
-- 既存セッションへの接続・切断
-- セッション削除
-- セッション状態のリアルタイム更新
+## 4. Functional Design
 
-### 4.3 ターミナルインターフェース
-**目的**: Claude Codeとの直接的なインタラクション
+### 4.1. SSH Connection Management
+- **Objective**: To establish and manage secure connections to remote servers.
+- **Functional Requirements**:
+  - Support for both password and SSH key-based authentication.
+  - Encrypted local storage for all connection credentials.
+  - Monitor connection status and provide auto-reconnect capabilities.
+  - Manage and store connection profiles for multiple servers.
 
-**機能要件**:
-- リアルタイムコマンド入力・出力表示
-- ターミナルエスケープシーケンス対応
-- コマンド履歴機能
-- 特殊キー入力（Ctrl+C、Tab、矢印キー）
-- テキストサイズ調整、カラーテーマ
+### 4.2. `tmux` Session Management
+- **Objective**: To manage `claude code` sessions running within `tmux` on the remote server.
+- **Functional Requirements**:
+  - List active `tmux` sessions with metadata (e.g., creation time, last activity).
+  - Create new sessions.
+  - Attach to and detach from existing sessions.
+  - Terminate (kill) sessions.
+  - Real-time updates of session states.
 
-### 4.4 プッシュ通知システム
-**目的**: Claude Code作業完了時の非同期通知
+### 4.3. Terminal Interface
+- **Objective**: To provide a direct, interactive terminal for `claude code`.
+- **Functional Requirements**:
+  - Real-time command input and output display.
+  - Full support for standard terminal escape sequences (colors, cursor movement).
+  - Command history functionality.
+  - Support for special key inputs (e.g., `Ctrl+C`, `Tab`, Arrow Keys).
+  - User-configurable text size and color themes.
 
-**技術設計**:
-- サーバー側：tmux出力監視でBEL文字（`\x07`）検知
-- 通知送信：FCM/APNS経由でリアルタイム通知
-- クライアント側：バックグラウンド受信と適切なディープリンク
+### 4.4. Push Notification System
+- **Objective**: To provide asynchronous notifications for task completion.
+- **Technical Design**:
+  - **Server-Side**: A listener process on the server will monitor `tmux` output. It will trigger a notification upon detecting a specific signal, such as the BEL character (`\x07`).
+  - **Push Delivery**: The server-side listener will use Firebase Cloud Messaging (FCM) for Android and Apple Push Notification service (APNS) for iOS to deliver real-time push notifications.
+  - **Client-Side**: The app will handle background notification reception and navigate the user to the relevant session upon opening (deep linking).
 
-## 5. セキュリティ設計
+## 5. Security Design
 
-### 5.1 データ保護
-- **認証情報**: Expo Secure Storeでローカル暗号化
-- **通信**: SSH標準暗号化プロトコル
-- **セッションデータ**: メモリ内のみ、永続化なし
+### 5.1. Data Protection
+- **Credentials**: All credentials (passwords, private keys) will be encrypted and stored locally using `Expo SecureStore`.
+- **Data in Transit**: All communication will be encrypted using standard SSH cryptographic protocols.
+- **Session Data**: Terminal output and session data will be held in-memory only and will not be persisted to disk on the mobile device.
 
-### 5.2 認証戦略
-- **一次認証**: SSH（パスワード/キー）
-- **二次認証**: アプリレベル（PIN/生体認証）
-- **セッション管理**: 自動タイムアウト設定
+### 5.2. Authentication Strategy
+- **Primary Authentication**: SSH protocol (password or public key).
+- **Secondary Authentication**: App-level security via PIN or Biometrics (`Face ID`/`Touch ID`) to unlock the application, implemented with `Expo Local Authentication`.
+- **Session Inactivity**: The app will feature a configurable auto-timeout setting that locks the app after a period of inactivity.
 
-## 6. ユーザーエクスペリエンス設計
+## 6. Development & Debugging Workflow
 
-### 6.1 画面フロー
-```
-起動 → 接続設定確認 → セッション一覧 → ターミナル操作
-     ↓（未設定時）    ↓（新規作成）   ↓
-   接続設定 ────→ セッション作成 → ターミナル操作
-```
+To ensure an easy and effective debugging experience on real devices, we will use **Development Builds**.
 
-### 6.2 エラーハンドリング
-- **ネットワークエラー**: 自動再試行とユーザー通知
-- **認証エラー**: 明確なエラーメッセージと再設定フロー
-- **セッションエラー**: グレースフルな復旧とフォールバック
-
-## 7. パフォーマンス要件
-
-### 7.1 応答性
-- 接続確立：5秒以内
-- コマンド応答：1秒以内（通常時）
-- セッション切り替え：即座
-
-### 7.2 リソース使用量
-- メモリ使用量：100MB以下（通常時）
-- バッテリー消費：最小限（効率的な接続管理）
-- データ使用量：テキストベースで最小限
-
-## 8. 品質保証
-
-### 8.1 テスト戦略
-- **単体テスト**: 重要なロジック（SSH接続、状態管理）
-- **統合テスト**: SSH接続からターミナル操作まで
-- **E2Eテスト**: 主要ユーザーフローの自動化
-- **セキュリティテスト**: 認証情報保護の検証
-
-### 8.2 監視・ログ
-- **エラー追跡**: クラッシュレポートと詳細ログ
-- **パフォーマンス監視**: 接続品質とレスポンス時間
-- **使用分析**: 機能使用率とユーザー行動パターン
-
-## 9. 拡張性・保守性
-
-### 9.1 将来の機能拡張
-- SFTP ファイル転送機能
-- 複数ターミナルタブ
-- SSH トンネリング機能
-- カスタムキーバインディング
-
-### 9.2 保守性
-- **コード品質**: ESLint、Prettier、TypeScript strict mode
-- **ドキュメント**: 機能仕様とAPI仕様の維持
-- **依存関係管理**: 定期的なセキュリティアップデート
-
----
-
-このドキュメントは開発フェーズに応じて更新され、実装の進捗と合わせて詳細化されます。
+1.  **Setup (One-time)**: Create a development-specific build of the app using the command `eas build --profile development` and install the resulting `.ipa`/`.apk` file on a physical device.
+2.  **Daily Workflow**:
+    - Run the development server on the local machine with `npx expo start --dev-client`.
+    - Open the installed development app on the device. It will connect to the development server.
+3.  **Debugging**: Use the **Flipper** desktop application. It will automatically connect to the running development build and provide powerful, out-of-the-box tools for inspecting the UI, logs, state, crashes, and more. **This is the recommended workflow for all debugging.**
