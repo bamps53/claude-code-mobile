@@ -3,30 +3,21 @@
  * @description Provides SSH connection management and command execution functionality
  */
 
-// Note: Temporarily keep mock while investigating @speedshield/react-native-ssh-sftp API
-// TODO: Replace with actual library implementation after API verification
+import SSHClient from '@dylankenneally/react-native-ssh-sftp';
 import { SSHConnection } from '../types';
 
 /**
- * Mock SSH client interface for development
- * @description Simulates SSH operations for development and testing
- */
-interface MockSSHClient {
-  executeCommand: (command: string) => Promise<string>;
-  disconnect: () => Promise<void>;
-  connect: () => Promise<void>;
-  isConnected?: () => boolean;
-}
-
-/**
- * SSH client wrapper interface
+ * Our SSH client wrapper interface
  * @description Provides a clean interface for SSH operations
  */
-export interface SSHClient {
+export interface SSHClientWrapper {
   executeCommand: (command: string) => Promise<string>;
   isConnected: () => boolean;
   disconnect: () => Promise<void>;
 }
+
+// Export alias for backward compatibility
+export { SSHClientWrapper as SSHClient };
 
 /**
  * SSH connection configuration
@@ -118,16 +109,17 @@ function createUserFriendlyError(error: Error): string {
 
 /**
  * SSH client wrapper implementation
- * @description Wraps the mock SSH client with error handling and logging
+ * @description Wraps the native SSH client with error handling and logging
  */
-class SSHClientWrapper implements SSHClient {
-  private client: MockSSHClient;
+class SSHClientWrapperImpl implements SSHClientWrapper {
+  private client: InstanceType<typeof SSHClient>;
   private connectionConfig: SSHConfig;
   private connected: boolean = false;
 
-  constructor(client: MockSSHClient, config: SSHConfig) {
+  constructor(client: InstanceType<typeof SSHClient>, config: SSHConfig) {
     this.client = client;
     this.connectionConfig = config;
+    this.connected = true; // Set to true when successfully created
   }
 
   /**
@@ -148,7 +140,8 @@ class SSHClientWrapper implements SSHClient {
         throw new Error('SSH client is not connected');
       }
 
-      const result = await this.client.executeCommand(command);
+      // Use the execute method from the native SSH client
+      const result = await this.client.execute(command);
       return result || '';
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -162,15 +155,10 @@ class SSHClientWrapper implements SSHClient {
    * @returns True if connected, false otherwise
    */
   isConnected(): boolean {
-    try {
-      // Check both internal state and client state
-      return (
-        this.connected && (this.client.isConnected ? this.client.isConnected() : true)
-      );
-    } catch {
-      // If client.isConnected() throws, assume disconnected
-      return false;
-    }
+    // For the @dylankenneally/react-native-ssh-sftp library,
+    // we track connection state internally since the library
+    // doesn't expose an isConnected method
+    return this.connected;
   }
 
   /**
@@ -220,7 +208,7 @@ class SSHClientWrapper implements SSHClient {
  */
 export async function createSSHConnection(
   connection: SSHConnection
-): Promise<SSHClient> {
+): Promise<SSHClientWrapper> {
   // Validate credentials before attempting connection
   if (!validateSSHCredentials(connection)) {
     throw new Error('Invalid SSH credentials');
@@ -240,47 +228,40 @@ export async function createSSHConnection(
   }
 
   try {
-    // Enhanced mock SSH client for development with improved error simulation
-    const client: MockSSHClient = {
-      executeCommand: async (command: string) => {
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 50));
+    let client: InstanceType<typeof SSHClient>;
 
-        // Return realistic command outputs
-        if (command.includes('tmux list-sessions')) {
-          return 'session1: 1 windows (created Wed Jan 1 10:00:00 2025)\nsession2: 2 windows (created Wed Jan 1 11:00:00 2025)';
-        } else if (command.includes('echo')) {
-          return command.replace(/echo\s+/, '').replace(/['"]/g, '');
-        }
-        return `Mock output for: ${command}`;
-      },
-      disconnect: async () => {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      },
-      connect: async () => {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        // Simulate connection validation with realistic error conditions
-        if (config.host === 'invalid-host' || config.host.includes('nonexistent')) {
-          throw new Error('Connection refused');
-        }
-        if (
-          config.username === 'invalid-user' ||
-          (!config.password && !config.privateKey)
-        ) {
-          throw new Error('Authentication failed');
-        }
-        if (config.port !== 22 && config.port !== 2222) {
-          throw new Error('Connection timeout');
-        }
-      },
-      isConnected: () => true, // Mock client is always connected once created
-    };
+    // Connect using the appropriate authentication method
+    if (connection.authType === 'password') {
+      if (!config.password) {
+        throw new Error('Password is required for password authentication');
+      }
 
-    // Connect to the server
-    await client.connect();
+      client = await SSHClient.connectWithPassword(
+        config.host,
+        config.port,
+        config.username,
+        config.password
+      );
+    } else if (connection.authType === 'key') {
+      if (!config.privateKey) {
+        throw new Error('Private key is required for key authentication');
+      }
 
-    const wrapper = new SSHClientWrapper(client, config);
-    wrapper.setConnected(true);
+      // Extract passphrase from private key if provided
+      // For now, we assume no passphrase. This can be enhanced later.
+      client = await SSHClient.connectWithKey(
+        config.host,
+        config.port,
+        config.username,
+        config.privateKey,
+        undefined // passphrase - can be added to SSHConnection type later
+      );
+    } else {
+      throw new Error('Invalid authentication type');
+    }
+
+    // Create wrapper instance
+    const wrapper = new SSHClientWrapperImpl(client, config);
 
     return wrapper;
   } catch (error) {

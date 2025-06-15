@@ -7,7 +7,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import * as SecureStore from 'expo-secure-store';
 import { SSHConnection, TmuxSession, AppSettings, AppState } from '../types';
-import { createSSHConnection, SSHClient } from '../utils/ssh';
+import { createSSHConnection, SSHClientWrapper } from '../utils/ssh';
 import { TmuxManager } from '../utils/tmux';
 
 /**
@@ -43,7 +43,7 @@ const secureStorage = {
  * SSH client storage for active connections
  * @description Map of connection IDs to SSH clients
  */
-const sshClients = new Map<string, SSHClient>();
+const sshClients = new Map<string, SSHClientWrapper>();
 
 /**
  * Tmux manager storage for active connections

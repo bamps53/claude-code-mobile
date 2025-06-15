@@ -4,7 +4,7 @@
  */
 
 import { TmuxSession } from '../types';
-import { SSHClient } from './ssh';
+import { SSHClientWrapper } from './ssh';
 
 /**
  * Parses tmux list-sessions output into TmuxSession objects
@@ -122,7 +122,7 @@ function escapeCommand(command: string): string {
  * ```
  */
 export async function listTmuxSessions(
-  sshClient: SSHClient,
+  sshClient: SSHClientWrapper,
   connectionId: string
 ): Promise<TmuxSession[]> {
   try {
@@ -151,7 +151,7 @@ export async function listTmuxSessions(
  * ```
  */
 export async function createTmuxSession(
-  sshClient: SSHClient,
+  sshClient: SSHClientWrapper,
   sessionName?: string
 ): Promise<string> {
   try {
@@ -178,7 +178,7 @@ export async function createTmuxSession(
  * ```
  */
 export async function attachToTmuxSession(
-  sshClient: SSHClient,
+  sshClient: SSHClientWrapper,
   sessionName: string
 ): Promise<void> {
   try {
@@ -203,7 +203,7 @@ export async function attachToTmuxSession(
  * ```
  */
 export async function killTmuxSession(
-  sshClient: SSHClient,
+  sshClient: SSHClientWrapper,
   sessionName: string
 ): Promise<void> {
   try {
@@ -229,7 +229,7 @@ export async function killTmuxSession(
  * ```
  */
 export async function sendKeysToSession(
-  sshClient: SSHClient,
+  sshClient: SSHClientWrapper,
   sessionName: string,
   command: string
 ): Promise<void> {
@@ -253,7 +253,7 @@ export async function sendKeysToSession(
  * @throws Error if query fails
  */
 export async function getTmuxSessionInfo(
-  sshClient: SSHClient,
+  sshClient: SSHClientWrapper,
   sessionName: string
 ): Promise<{
   windows: number;
@@ -296,11 +296,11 @@ export async function getTmuxSessionInfo(
  * @description Provides comprehensive tmux session management with state tracking
  */
 export class TmuxManager {
-  private sshClient: SSHClient;
+  private sshClient: SSHClientWrapper;
   private connectionId: string;
   private sessions: Map<string, TmuxSession> = new Map();
 
-  constructor(sshClient: SSHClient, connectionId: string) {
+  constructor(sshClient: SSHClientWrapper, connectionId: string) {
     this.sshClient = sshClient;
     this.connectionId = connectionId;
   }

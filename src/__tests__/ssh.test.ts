@@ -4,7 +4,44 @@
  */
 
 import { SSHConnection } from '../types';
-import { SSHClient, createSSHConnection, validateSSHCredentials } from '../utils/ssh';
+import {
+  SSHClientWrapper,
+  createSSHConnection,
+  validateSSHCredentials,
+} from '../utils/ssh';
+
+// Mock the native SSH library for tests
+jest.mock('@dylankenneally/react-native-ssh-sftp', () => {
+  const mockClient = {
+    execute: jest.fn().mockResolvedValue('mock command output'),
+    disconnect: jest.fn().mockResolvedValue(undefined),
+  };
+
+  return {
+    connectWithPassword: jest
+      .fn()
+      .mockImplementation((host, port, username, password) => {
+        if (host === 'invalid-host') {
+          return Promise.reject(new Error('Connection refused'));
+        }
+        if (username === 'invalid-user') {
+          return Promise.reject(new Error('Authentication failed'));
+        }
+        return Promise.resolve(mockClient);
+      }),
+    connectWithKey: jest
+      .fn()
+      .mockImplementation((host, port, username, privateKey, passphrase) => {
+        if (host === 'invalid-host') {
+          return Promise.reject(new Error('Connection refused'));
+        }
+        if (username === 'invalid-user') {
+          return Promise.reject(new Error('Authentication failed'));
+        }
+        return Promise.resolve(mockClient);
+      }),
+  };
+});
 
 // Mock console.warn to avoid noise in tests
 jest.spyOn(console, 'warn').mockImplementation(() => {});
@@ -111,8 +148,8 @@ describe('SSH Connection Utils', () => {
     });
   });
 
-  describe('SSHClient wrapper', () => {
-    let sshClient: SSHClient;
+  describe('SSHClientWrapper', () => {
+    let sshClient: SSHClientWrapper;
 
     beforeEach(async () => {
       sshClient = await createSSHConnection(mockConnection);
@@ -121,7 +158,7 @@ describe('SSH Connection Utils', () => {
     it('should execute commands successfully', async () => {
       const result = await sshClient.executeCommand('ls -la');
 
-      expect(result).toBe('Mock output for: ls -la');
+      expect(result).toBe('mock command output');
     });
 
     it('should handle command execution errors', async () => {
