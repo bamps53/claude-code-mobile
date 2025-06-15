@@ -3,7 +3,7 @@
  * @description Tests SSH functionality with more focused approach
  */
 
-import { useAppStore } from '../store';
+import { createMockStore } from './store-mock';
 
 // Mock SSH utilities
 const mockSSHClient = {
@@ -18,6 +18,16 @@ jest.mock('../utils/ssh', () => ({
   testSSHConnection: jest.fn().mockResolvedValue(true),
 }));
 
+// Mock tmux utilities
+jest.mock('../utils/tmux', () => ({
+  TmuxManager: jest.fn(),
+  listTmuxSessions: jest.fn(),
+  createTmuxSession: jest.fn(),
+  killTmuxSession: jest.fn(),
+  sendKeysToSession: jest.fn(),
+  parseTmuxSessionList: jest.fn(),
+}));
+
 // Mock SecureStore
 jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn().mockResolvedValue(null),
@@ -26,23 +36,34 @@ jest.mock('expo-secure-store', () => ({
 }));
 
 describe('Store SSH Integration - Simplified', () => {
+  let store: ReturnType<typeof createMockStore>;
+
   beforeEach(() => {
-    // Clear store state
-    useAppStore.getState().clearAllData();
+    // Create fresh mock store for each test
+    store = createMockStore();
     jest.clearAllMocks();
 
     // Reset mock implementations
     mockSSHClient.executeCommand.mockResolvedValue('test output');
     mockSSHClient.isConnected.mockReturnValue(true);
     mockSSHClient.disconnect.mockResolvedValue(undefined);
+
+    // Mock tmux manager
+    const mockTmuxManager = {
+      refreshSessions: jest.fn().mockResolvedValue([]),
+      createSession: jest.fn().mockResolvedValue('new-session'),
+      killSession: jest.fn().mockResolvedValue(undefined),
+      sendCommand: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const { TmuxManager } = require('../utils/tmux');
+    TmuxManager.mockImplementation(() => mockTmuxManager);
   });
 
   describe('SSH Connection Flow', () => {
     it('should add connection, connect, and update state correctly', async () => {
-      const store = useAppStore.getState();
-
       // Add connection
-      store.addConnection({
+      store.getState().addConnection({
         name: 'Test Server',
         host: '192.168.1.100',
         port: 22,
@@ -51,15 +72,15 @@ describe('Store SSH Integration - Simplified', () => {
         password: 'testpass',
       });
 
-      expect(store.connections).toHaveLength(1);
-      const connection = store.connections[0];
+      expect(store.getState().connections).toHaveLength(1);
+      const connection = store.getState().connections[0];
       expect(connection.isConnected).toBe(false);
 
       // Connect to server
-      await store.connectToServer(connection.id);
+      await store.getState().connectToServer(connection.id);
 
       // Check updated state
-      const updatedStore = useAppStore.getState();
+      const updatedStore = store.getState();
       const updatedConnection = updatedStore.connections.find(
         c => c.id === connection.id
       );
@@ -74,8 +95,7 @@ describe('Store SSH Integration - Simplified', () => {
       const { createSSHConnection } = require('../utils/ssh');
       createSSHConnection.mockRejectedValueOnce(new Error('Auth failed'));
 
-      const store = useAppStore.getState();
-      store.addConnection({
+      store.getState().addConnection({
         name: 'Test Server',
         host: 'invalid-host',
         port: 22,
@@ -84,11 +104,13 @@ describe('Store SSH Integration - Simplified', () => {
         password: 'badpass',
       });
 
-      const connection = store.connections[0];
+      const connection = store.getState().connections[0];
 
-      await expect(store.connectToServer(connection.id)).rejects.toThrow('Auth failed');
+      await expect(store.getState().connectToServer(connection.id)).rejects.toThrow(
+        'Auth failed'
+      );
 
-      const updatedConnection = useAppStore
+      const updatedConnection = store
         .getState()
         .connections.find(c => c.id === connection.id);
       expect(updatedConnection?.isConnected).toBe(false);
@@ -96,10 +118,8 @@ describe('Store SSH Integration - Simplified', () => {
     });
 
     it('should disconnect and clean up properly', async () => {
-      const store = useAppStore.getState();
-
       // Add and connect
-      store.addConnection({
+      store.getState().addConnection({
         name: 'Test Server',
         host: '192.168.1.100',
         port: 22,
@@ -108,17 +128,17 @@ describe('Store SSH Integration - Simplified', () => {
         password: 'testpass',
       });
 
-      const connection = store.connections[0];
-      await store.connectToServer(connection.id);
+      const connection = store.getState().connections[0];
+      await store.getState().connectToServer(connection.id);
 
       // Verify connected state
-      expect(useAppStore.getState().activeConnectionId).toBe(connection.id);
+      expect(store.getState().activeConnectionId).toBe(connection.id);
 
       // Disconnect
-      await store.disconnectFromServer(connection.id);
+      await store.getState().disconnectFromServer(connection.id);
 
       // Verify disconnected state
-      const updatedStore = useAppStore.getState();
+      const updatedStore = store.getState();
       const updatedConnection = updatedStore.connections.find(
         c => c.id === connection.id
       );
@@ -131,8 +151,6 @@ describe('Store SSH Integration - Simplified', () => {
 
   describe('testConnection functionality', () => {
     it('should test connection without affecting store state', async () => {
-      const store = useAppStore.getState();
-
       const testConnection = {
         id: 'test-id',
         name: 'Test Server',
@@ -144,15 +162,15 @@ describe('Store SSH Integration - Simplified', () => {
         isConnected: false,
       };
 
-      const result = await store.testConnection(testConnection);
+      const result = await store.getState().testConnection(testConnection);
 
       expect(result).toBe(true);
       expect(mockSSHClient.executeCommand).toHaveBeenCalledWith('echo "test"');
       expect(mockSSHClient.disconnect).toHaveBeenCalled();
 
       // Store should remain unchanged
-      expect(store.connections).toHaveLength(0);
-      expect(store.activeConnectionId).toBeUndefined();
+      expect(store.getState().connections).toHaveLength(0);
+      expect(store.getState().activeConnectionId).toBeUndefined();
     });
   });
 });
