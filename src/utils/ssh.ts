@@ -3,13 +3,19 @@
  * @description Provides SSH connection management and command execution functionality
  */
 
-// Temporarily mock the SSH client for development
-// TODO: Replace with actual ReactNativeSSHClient implementation for production
+// Note: Temporarily keep mock while investigating @speedshield/react-native-ssh-sftp API
+// TODO: Replace with actual library implementation after API verification
 import { SSHConnection } from '../types';
+
+/**
+ * Mock SSH client interface for development
+ * @description Simulates SSH operations for development and testing
+ */
 interface MockSSHClient {
   executeCommand: (command: string) => Promise<string>;
   disconnect: () => Promise<void>;
   connect: () => Promise<void>;
+  isConnected?: () => boolean;
 }
 
 /**
@@ -112,7 +118,7 @@ function createUserFriendlyError(error: Error): string {
 
 /**
  * SSH client wrapper implementation
- * @description Wraps the native SSH client with error handling and logging
+ * @description Wraps the mock SSH client with error handling and logging
  */
 class SSHClientWrapper implements SSHClient {
   private client: MockSSHClient;
@@ -156,7 +162,15 @@ class SSHClientWrapper implements SSHClient {
    * @returns True if connected, false otherwise
    */
   isConnected(): boolean {
-    return this.connected;
+    try {
+      // Check both internal state and client state
+      return (
+        this.connected && (this.client.isConnected ? this.client.isConnected() : true)
+      );
+    } catch {
+      // If client.isConnected() throws, assume disconnected
+      return false;
+    }
   }
 
   /**
@@ -226,27 +240,40 @@ export async function createSSHConnection(
   }
 
   try {
-    // Create mock SSH client for development
-    // TODO: Replace with actual ReactNativeSSHClient for production
+    // Enhanced mock SSH client for development with improved error simulation
     const client: MockSSHClient = {
       executeCommand: async (command: string) => {
-        // Mock command execution - return simulated output
-        await new Promise(resolve => setTimeout(resolve, 100)); // Simulate delay
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, Math.random() * 200 + 50));
+
+        // Return realistic command outputs
+        if (command.includes('tmux list-sessions')) {
+          return 'session1: 1 windows (created Wed Jan 1 10:00:00 2025)\nsession2: 2 windows (created Wed Jan 1 11:00:00 2025)';
+        } else if (command.includes('echo')) {
+          return command.replace(/echo\s+/, '').replace(/['"]/g, '');
+        }
         return `Mock output for: ${command}`;
       },
       disconnect: async () => {
         await new Promise(resolve => setTimeout(resolve, 50));
       },
       connect: async () => {
-        await new Promise(resolve => setTimeout(resolve, 200));
-        // Simulate connection validation
-        if (config.host === 'invalid-host') {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        // Simulate connection validation with realistic error conditions
+        if (config.host === 'invalid-host' || config.host.includes('nonexistent')) {
           throw new Error('Connection refused');
         }
-        if (config.username === 'invalid-user') {
+        if (
+          config.username === 'invalid-user' ||
+          (!config.password && !config.privateKey)
+        ) {
           throw new Error('Authentication failed');
         }
+        if (config.port !== 22 && config.port !== 2222) {
+          throw new Error('Connection timeout');
+        }
       },
+      isConnected: () => true, // Mock client is always connected once created
     };
 
     // Connect to the server
