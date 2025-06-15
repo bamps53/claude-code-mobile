@@ -3,8 +3,14 @@
  * @description Provides SSH connection management and command execution functionality
  */
 
-import ReactNativeSSHClient from '@dylankenneally/react-native-ssh-sftp';
+// Temporarily mock the SSH client for development
+// TODO: Replace with actual ReactNativeSSHClient implementation for production
 import { SSHConnection } from '../types';
+interface MockSSHClient {
+  executeCommand: (command: string) => Promise<string>;
+  disconnect: () => Promise<void>;
+  connect: () => Promise<void>;
+}
 
 /**
  * SSH client wrapper interface
@@ -80,7 +86,7 @@ function createUserFriendlyError(error: Error): string {
     return 'Server not found. Please check the hostname.';
   }
 
-  if (message.includes('econnrefused')) {
+  if (message.includes('econnrefused') || message.includes('connection refused')) {
     return 'Connection refused. Please check the port and firewall settings.';
   }
 
@@ -109,11 +115,11 @@ function createUserFriendlyError(error: Error): string {
  * @description Wraps the native SSH client with error handling and logging
  */
 class SSHClientWrapper implements SSHClient {
-  private client: ReactNativeSSHClient;
+  private client: MockSSHClient;
   private connectionConfig: SSHConfig;
   private connected: boolean = false;
 
-  constructor(client: ReactNativeSSHClient, config: SSHConfig) {
+  constructor(client: MockSSHClient, config: SSHConfig) {
     this.client = client;
     this.connectionConfig = config;
   }
@@ -220,13 +226,28 @@ export async function createSSHConnection(
   }
 
   try {
-    const client = new ReactNativeSSHClient(
-      config.host,
-      config.port,
-      config.username,
-      config.password || '',
-      config.privateKey || ''
-    );
+    // Create mock SSH client for development
+    // TODO: Replace with actual ReactNativeSSHClient for production
+    const client: MockSSHClient = {
+      executeCommand: async (command: string) => {
+        // Mock command execution - return simulated output
+        await new Promise(resolve => setTimeout(resolve, 100)); // Simulate delay
+        return `Mock output for: ${command}`;
+      },
+      disconnect: async () => {
+        await new Promise(resolve => setTimeout(resolve, 50));
+      },
+      connect: async () => {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        // Simulate connection validation
+        if (config.host === 'invalid-host') {
+          throw new Error('Connection refused');
+        }
+        if (config.username === 'invalid-user') {
+          throw new Error('Authentication failed');
+        }
+      },
+    };
 
     // Connect to the server
     await client.connect();

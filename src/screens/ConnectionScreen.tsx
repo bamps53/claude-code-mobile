@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, FlatList, StyleSheet } from 'react-native';
+import { View, FlatList, StyleSheet, Alert } from 'react-native';
 import {
   Card,
   Title,
@@ -14,9 +14,12 @@ import {
   IconButton,
   useTheme,
   Chip,
+  ActivityIndicator,
+  Snackbar,
 } from 'react-native-paper';
 import { useAppStore } from '../store';
 import { SSHConnection } from '../types';
+import AddConnectionModal from '../components/AddConnectionModal';
 
 /**
  * Connection card component for displaying SSH connection details
@@ -29,13 +32,17 @@ import { SSHConnection } from '../types';
 function ConnectionCard({
   connection,
   onConnect,
+  onDisconnect,
   onEdit,
   onDelete,
+  isLoading = false,
 }: {
   connection: SSHConnection;
   onConnect: (id: string) => void;
+  onDisconnect: (id: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  isLoading?: boolean;
 }) {
   const theme = useTheme();
 
@@ -64,11 +71,17 @@ function ConnectionCard({
             >
               {connection.isConnected ? 'Connected' : 'Disconnected'}
             </Chip>
-            <IconButton icon="pencil" size={20} onPress={() => onEdit(connection.id)} />
+            <IconButton
+              icon="pencil"
+              size={20}
+              onPress={() => onEdit(connection.id)}
+              disabled={isLoading}
+            />
             <IconButton
               icon="delete"
               size={20}
               onPress={() => onDelete(connection.id)}
+              disabled={isLoading}
             />
           </View>
         </View>
@@ -82,17 +95,40 @@ function ConnectionCard({
               Last: {connection.lastConnected.toLocaleDateString()}
             </Paragraph>
           )}
+          {connection.connectionError && (
+            <Paragraph style={[styles.connectionError, { color: theme.colors.error }]}>
+              Error: {connection.connectionError}
+            </Paragraph>
+          )}
         </View>
       </Card.Content>
 
       <Card.Actions>
-        <Button
-          mode={connection.isConnected ? 'outlined' : 'contained'}
-          onPress={() => onConnect(connection.id)}
-          disabled={connection.isConnected}
-        >
-          {connection.isConnected ? 'Connected' : 'Connect'}
-        </Button>
+        {connection.isConnected ? (
+          <Button
+            mode="outlined"
+            onPress={() => onDisconnect(connection.id)}
+            disabled={isLoading}
+            icon={isLoading ? () => <ActivityIndicator size="small" /> : undefined}
+          >
+            {isLoading ? 'Disconnecting...' : 'Disconnect'}
+          </Button>
+        ) : (
+          <Button
+            mode="contained"
+            onPress={() => onConnect(connection.id)}
+            disabled={isLoading}
+            icon={
+              isLoading
+                ? () => (
+                    <ActivityIndicator size="small" color={theme.colors.onPrimary} />
+                  )
+                : undefined
+            }
+          >
+            {isLoading ? 'Connecting...' : 'Connect'}
+          </Button>
+        )}
       </Card.Actions>
     </Card>
   );
@@ -105,18 +141,85 @@ function ConnectionCard({
  */
 export default function ConnectionScreen() {
   const theme = useTheme();
-  const { connections, connectToServer, disconnectFromServer } = useAppStore();
+  const { connections, connectToServer, disconnectFromServer, removeConnection } =
+    useAppStore();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingConnection, setEditingConnection] = useState<
+    SSHConnection | undefined
+  >();
+  const [loadingConnections, setLoadingConnections] = useState<Set<string>>(new Set());
+  const [snackbarMessage, setSnackbarMessage] = useState<string>('');
+  const [showSnackbar, setShowSnackbar] = useState(false);
+
+  /**
+   * Shows a feedback message to the user
+   * @param message - Message to display
+   */
+  const showMessage = (message: string) => {
+    setSnackbarMessage(message);
+    setShowSnackbar(true);
+  };
+
+  /**
+   * Sets loading state for a specific connection
+   * @param connectionId - ID of the connection
+   * @param loading - Whether the connection is loading
+   */
+  const setConnectionLoading = (connectionId: string, loading: boolean) => {
+    setLoadingConnections(prev => {
+      const newSet = new Set(prev);
+      if (loading) {
+        newSet.add(connectionId);
+      } else {
+        newSet.delete(connectionId);
+      }
+      return newSet;
+    });
+  };
 
   /**
    * Handles connection to SSH server
    * @param connectionId - ID of the connection to establish
    */
   const handleConnect = async (connectionId: string) => {
+    const connection = connections.find(c => c.id === connectionId);
+    if (!connection) return;
+
+    setConnectionLoading(connectionId, true);
+
     try {
       await connectToServer(connectionId);
+      showMessage(`Connected to ${connection.name} successfully`);
     } catch (error) {
       console.error('Connection failed:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      showMessage(`Failed to connect to ${connection.name}: ${errorMessage}`);
+    } finally {
+      setConnectionLoading(connectionId, false);
+    }
+  };
+
+  /**
+   * Handles disconnection from SSH server
+   * @param connectionId - ID of the connection to disconnect
+   */
+  const handleDisconnect = async (connectionId: string) => {
+    const connection = connections.find(c => c.id === connectionId);
+    if (!connection) return;
+
+    setConnectionLoading(connectionId, true);
+
+    try {
+      await disconnectFromServer(connectionId);
+      showMessage(`Disconnected from ${connection.name}`);
+    } catch (error) {
+      console.error('Disconnect failed:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      showMessage(`Failed to disconnect from ${connection.name}: ${errorMessage}`);
+    } finally {
+      setConnectionLoading(connectionId, false);
     }
   };
 
@@ -125,8 +228,11 @@ export default function ConnectionScreen() {
    * @param connectionId - ID of the connection to edit
    */
   const handleEdit = (connectionId: string) => {
-    // Navigate to edit screen (to be implemented)
-    console.log('Edit connection:', connectionId);
+    const connection = connections.find(c => c.id === connectionId);
+    if (connection) {
+      setEditingConnection(connection);
+      setShowAddModal(true);
+    }
   };
 
   /**
@@ -134,8 +240,35 @@ export default function ConnectionScreen() {
    * @param connectionId - ID of the connection to delete
    */
   const handleDelete = (connectionId: string) => {
-    // Show confirmation dialog and delete (to be implemented)
-    console.log('Delete connection:', connectionId);
+    const connection = connections.find(c => c.id === connectionId);
+    if (!connection) return;
+
+    // Show confirmation dialog
+    Alert.alert(
+      'Delete Connection',
+      `Are you sure you want to delete "${connection.name}"? This action cannot be undone.`,
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            removeConnection(connectionId);
+          },
+        },
+      ]
+    );
+  };
+
+  /**
+   * Handles closing the add/edit modal
+   */
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setEditingConnection(undefined);
   };
 
   /**
@@ -147,8 +280,10 @@ export default function ConnectionScreen() {
     <ConnectionCard
       connection={item}
       onConnect={handleConnect}
+      onDisconnect={handleDisconnect}
       onEdit={handleEdit}
       onDelete={handleDelete}
+      isLoading={loadingConnections.has(item.id)}
     />
   );
 
@@ -167,6 +302,21 @@ export default function ConnectionScreen() {
         style={[styles.fab, { backgroundColor: theme.colors.primary }]}
         onPress={() => setShowAddModal(true)}
       />
+
+      <AddConnectionModal
+        visible={showAddModal}
+        onDismiss={handleCloseModal}
+        editConnection={editingConnection}
+      />
+
+      <Snackbar
+        visible={showSnackbar}
+        onDismiss={() => setShowSnackbar(false)}
+        duration={4000}
+        style={styles.snackbar}
+      >
+        {snackbarMessage}
+      </Snackbar>
     </View>
   );
 }
@@ -217,10 +367,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.6,
   },
+  connectionError: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
   fab: {
     position: 'absolute',
     margin: 16,
     right: 0,
     bottom: 0,
+  },
+  snackbar: {
+    bottom: 90, // Position above the FAB
   },
 });
