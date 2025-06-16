@@ -71,13 +71,29 @@ function ConnectionCard({
   };
 
   return (
-    <Card style={styles.connectionCard}>
+    <Card
+      style={[
+        styles.connectionCard,
+        {
+          elevation: 0,
+          borderWidth: 1,
+          borderColor: connection.isConnected
+            ? theme.colors.primary
+            : theme.colors.outline,
+        },
+      ]}
+    >
       <Card.Content>
         <View style={styles.cardHeader}>
           <View style={styles.connectionInfo}>
             <Title style={styles.connectionName}>{connection.name}</Title>
-            <Paragraph style={styles.connectionDetails}>
-              {connection.username}@{connection.host}:{connection.port}
+            <Paragraph
+              style={[
+                styles.connectionDetails,
+                { fontFamily: 'RobotoMono_400Regular' },
+              ]}
+            >
+              {'>'} {connection.username}@{connection.host}:{connection.port}
             </Paragraph>
           </View>
           <View style={styles.cardActions}>
@@ -87,13 +103,19 @@ function ConnectionCard({
               style={[
                 styles.statusChip,
                 {
-                  backgroundColor: connection.isConnected
-                    ? theme.colors.primaryContainer
-                    : theme.colors.surfaceVariant,
+                  backgroundColor: 'transparent',
+                  borderColor: connection.isConnected
+                    ? theme.colors.primary
+                    : theme.colors.outline,
                 },
               ]}
+              textStyle={{
+                color: connection.isConnected
+                  ? theme.colors.primary
+                  : theme.colors.onSurfaceVariant,
+              }}
             >
-              {connection.isConnected ? 'Connected' : 'Disconnected'}
+              {connection.isConnected ? 'CONNECTED' : 'DISCONNECTED'}
             </Chip>
             <IconButton
               icon="pencil"
@@ -132,23 +154,26 @@ function ConnectionCard({
             onPress={() => onDisconnect(connection.id)}
             disabled={isLoading}
             icon={isLoading ? () => <ActivityIndicator size="small" /> : undefined}
+            style={{ borderColor: theme.colors.outline, borderRadius: 0 }}
+            labelStyle={{ fontFamily: 'RobotoMono_500Medium' }}
           >
-            {isLoading ? 'Disconnecting...' : 'Disconnect'}
+            {isLoading ? 'DISCONNECTING...' : 'DISCONNECT'}
           </Button>
         ) : (
           <Button
-            mode="contained"
+            mode="outlined"
             onPress={() => onConnect(connection.id)}
             disabled={isLoading}
             icon={
               isLoading
-                ? () => (
-                    <ActivityIndicator size="small" color={theme.colors.onPrimary} />
-                  )
+                ? () => <ActivityIndicator size="small" color={theme.colors.primary} />
                 : undefined
             }
+            style={{ borderColor: theme.colors.primary, borderRadius: 0 }}
+            labelStyle={{ fontFamily: 'RobotoMono_500Medium' }}
+            textColor={theme.colors.primary}
           >
-            {isLoading ? 'Connecting...' : 'Connect'}
+            {isLoading ? 'CONNECTING...' : 'CONNECT'}
           </Button>
         )}
       </Card.Actions>
@@ -356,6 +381,7 @@ const styles = StyleSheet.create({
   },
   connectionCard: {
     marginBottom: 12,
+    borderRadius: 0,
   },
   cardHeader: {
     flexDirection: 'row',

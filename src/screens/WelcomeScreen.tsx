@@ -8,6 +8,7 @@ import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { Button, Card, Title, Paragraph, useTheme } from 'react-native-paper';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useAppStore } from '../store';
+import TerminalTypingText from '../components/TerminalTypingText';
 
 /**
  * Welcome screen component with biometric authentication
@@ -18,6 +19,8 @@ export default function WelcomeScreen() {
   const theme = useTheme();
   const { setAuthenticated, settings } = useAppStore();
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [titleComplete, setTitleComplete] = useState(false);
+  const [subtitleComplete, setSubtitleComplete] = useState(false);
 
   /**
    * Handles biometric authentication process
@@ -60,23 +63,56 @@ export default function WelcomeScreen() {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       <View style={styles.content}>
-        <Card style={styles.card}>
+        <Card
+          style={[
+            styles.card,
+            {
+              elevation: 0,
+              borderWidth: 1,
+              borderColor: theme.colors.outline,
+              borderRadius: 0,
+            },
+          ]}
+        >
           <Card.Content style={styles.cardContent}>
-            <Title style={styles.title}>Claude Code Mobile</Title>
-            <Paragraph style={styles.subtitle}>
-              Secure access to your remote development environment
-            </Paragraph>
+            <View style={styles.titleContainer}>
+              <TerminalTypingText
+                text="Claude Code Mobile"
+                typeSpeed={80}
+                showCursor={!titleComplete}
+                onComplete={() => setTitleComplete(true)}
+                style={styles.title}
+              />
+            </View>
+            {titleComplete && (
+              <View style={styles.subtitleContainer}>
+                <TerminalTypingText
+                  text="> Secure access to your remote development environment"
+                  typeSpeed={30}
+                  showCursor={!subtitleComplete}
+                  onComplete={() => setSubtitleComplete(true)}
+                  style={styles.subtitle}
+                />
+              </View>
+            )}
 
-            <Button
-              mode="contained"
-              onPress={handleAuthentication}
-              loading={isAuthenticating}
-              disabled={isAuthenticating}
-              style={styles.button}
-              contentStyle={styles.buttonContent}
-            >
-              {isAuthenticating ? 'Authenticating...' : 'Get Started'}
-            </Button>
+            {subtitleComplete && (
+              <Button
+                mode="outlined"
+                onPress={handleAuthentication}
+                loading={isAuthenticating}
+                disabled={isAuthenticating}
+                style={[
+                  styles.button,
+                  { borderColor: theme.colors.primary, borderRadius: 0 },
+                ]}
+                contentStyle={styles.buttonContent}
+                labelStyle={{ fontFamily: 'RobotoMono_500Medium' }}
+                textColor={theme.colors.primary}
+              >
+                {isAuthenticating ? 'AUTHENTICATING...' : '[ GET STARTED ]'}
+              </Button>
+            )}
           </Card.Content>
         </Card>
       </View>
@@ -100,17 +136,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 24,
   },
+  titleContainer: {
+    minHeight: 40,
+    marginBottom: 16,
+  },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontFamily: 'RobotoMono_700Bold',
     textAlign: 'center',
   },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
+  subtitleContainer: {
+    minHeight: 24,
     marginBottom: 32,
-    opacity: 0.7,
+  },
+  subtitle: {
+    fontSize: 14,
+    fontFamily: 'RobotoMono_400Regular',
+    textAlign: 'center',
+    opacity: 0.8,
   },
   button: {
     width: '100%',

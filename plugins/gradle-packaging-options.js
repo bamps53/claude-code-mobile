@@ -1,14 +1,14 @@
 const { withAppBuildGradle, withProjectBuildGradle } = require('@expo/config-plugins');
 
-const withGradlePackagingOptions = (config) => {
-  return withAppBuildGradle(config, (config) => {
+const withGradlePackagingOptions = config => {
+  return withAppBuildGradle(config, config => {
     let gradleContent = config.modResults.contents;
-    
+
     // Find existing packagingOptions block and add our options to it
     const packagingOptionsRegex = /(packagingOptions\s*\{[^}]*)(.*?)(\s*\})/s;
-    
+
     if (packagingOptionsRegex.test(gradleContent)) {
-      // Add our options to existing packagingOptions block  
+      // Add our options to existing packagingOptions block
       const additionalOptions = `
         // SSH library duplicate file resolution
         pickFirst 'META-INF/versions/9/OSGI-INF/MANIFEST.MF'
@@ -26,7 +26,7 @@ const withGradlePackagingOptions = (config) => {
         exclude 'kotlin/**'
         exclude 'kotlin-tooling-metadata.json'
         `;
-      
+
       config.modResults.contents = gradleContent.replace(
         packagingOptionsRegex,
         `$1$2${additionalOptions}$3`
@@ -54,10 +54,10 @@ const withGradlePackagingOptions = (config) => {
             useLegacyPackaging (findProperty('expo.useLegacyPackaging')?.toBoolean() ?: false)
         }
     }`;
-      
+
       // Find the android block and add packagingOptions
       const androidBlockRegex = /(android\s*\{[\s\S]*?)(\s*\}[\s\S]*dependencies)/;
-      
+
       if (androidBlockRegex.test(gradleContent)) {
         config.modResults.contents = gradleContent.replace(
           androidBlockRegex,
@@ -65,7 +65,7 @@ const withGradlePackagingOptions = (config) => {
         );
       }
     }
-    
+
     return config;
   });
 };

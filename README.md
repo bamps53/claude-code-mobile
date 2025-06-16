@@ -19,12 +19,14 @@ Secure mobile access to remote development environments through SSH connections 
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - Expo CLI (`npm install -g @expo/cli`)
 - EAS CLI (`npm install -g eas-cli`)
 - Android Studio or Xcode for development
 
 ### Installation
+
 ```bash
 # Clone the repository
 git clone https://github.com/bamps53/claude-code-mobile.git
@@ -38,6 +40,7 @@ npm start
 ```
 
 ### Development Builds (Required for SSH)
+
 Standard Expo Go cannot run this app due to native SSH dependencies. You need EAS development builds:
 
 ```bash
@@ -54,6 +57,7 @@ npx expo start --dev-client
 ## 🧪 Testing
 
 ### Unit Tests
+
 ```bash
 npm test                # Run all tests
 npm run test:watch      # Watch mode
@@ -61,6 +65,7 @@ npm run test:coverage   # With coverage report
 ```
 
 ### E2E Tests (Maestro)
+
 ```bash
 npm run test:e2e:smoke      # Quick validation
 npm run test:e2e:welcome    # Authentication flow
@@ -69,6 +74,7 @@ npm run test:e2e:connection # SSH connections
 ```
 
 ### Code Quality
+
 ```bash
 npm run lint        # ESLint check and fix
 npm run format      # Prettier formatting
@@ -86,6 +92,7 @@ npm run typecheck   # TypeScript validation
 ## 🏗️ Architecture
 
 ### Core Technologies
+
 - **React Native 0.79.3** + **React 19** with Expo SDK 53
 - **Zustand** for lightweight state management
 - **React Native Paper** for Material Design components
@@ -94,6 +101,7 @@ npm run typecheck   # TypeScript validation
 - **Expo SecureStore** for credential storage
 
 ### Security
+
 - **Multi-layer authentication**: SSH + biometrics/PIN
 - **Secure storage**: Native OS secure enclaves
 - **In-memory sessions**: No terminal data persistence
@@ -102,13 +110,16 @@ npm run typecheck   # TypeScript validation
 ## 🔧 CI/CD
 
 ### Automated Workflows
+
 - **Quality Checks**: TypeScript, ESLint, Prettier, Jest tests
 - **Security Analysis**: Dependency auditing and vulnerability scanning
 - **Development Builds**: Automatic EAS builds on main branch
 - **Production Builds**: Automatic builds and store submission on releases
 
 ### Required Secrets
+
 Configure these in GitHub repository settings:
+
 - `EXPO_TOKEN` - Expo authentication token for EAS builds
 
 ## 🤝 Contributing
@@ -120,6 +131,7 @@ Configure these in GitHub repository settings:
 5. Open a Pull Request
 
 ### Development Guidelines
+
 - Follow conventional commit format
 - Maintain test coverage above 80%
 - Run `npm run lint` and `npm run typecheck` before committing

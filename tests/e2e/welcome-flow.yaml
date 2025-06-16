@@ -2,37 +2,36 @@
 # Tests the initial authentication and welcome screen functionality
 
 appId: host.exp.exponent
-name: "Welcome Screen Authentication Flow"
-tags: 
+name: 'Welcome Screen Authentication Flow'
+tags:
   - welcome
   - authentication
   - smoke
 
 ---
-
 # Launch app and verify welcome screen
 - launchApp
-- assertVisible: "Claude Code Mobile"
-- assertVisible: "Secure access to your remote development environment"
-- assertVisible: "Get Started"
+- assertVisible: 'Claude Code Mobile'
+- assertVisible: 'Secure access to your remote development environment'
+- assertVisible: 'Get Started'
 
 # Take screenshot of welcome screen
-- takeScreenshot: "01_welcome_screen.png"
+- takeScreenshot: '01_welcome_screen.png'
 
 # Test authentication flow
-- tapOn: "Get Started"
+- tapOn: 'Get Started'
 
 # Wait for authentication (biometric or direct access)
 - runFlow:
     when:
-      visible: "Authenticate to access Claude Code"
+      visible: 'Authenticate to access Claude Code'
     then:
       # If biometric prompt appears, dismiss for testing
       - pressKey: Escape
 
 # Verify navigation to main app
-- assertVisible: 
-    text: "Connections"
+- assertVisible:
+    text: 'Connections'
     timeout: 10000
 
-- takeScreenshot: "02_main_app.png"
+- takeScreenshot: '02_main_app.png'

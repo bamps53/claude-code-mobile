@@ -70,11 +70,22 @@ function SessionCard({
   };
 
   return (
-    <Card style={styles.sessionCard}>
+    <Card
+      style={[
+        styles.sessionCard,
+        {
+          elevation: 0,
+          borderWidth: 1,
+          borderColor: session.isActive ? theme.colors.primary : theme.colors.outline,
+        },
+      ]}
+    >
       <Card.Content>
         <View style={styles.cardHeader}>
           <View style={styles.sessionInfo}>
-            <Title style={styles.sessionName}>{session.name}</Title>
+            <Title style={[styles.sessionName, { fontFamily: 'RobotoMono_700Bold' }]}>
+              $ {session.name}
+            </Title>
             <Paragraph style={styles.sessionDetails}>
               {session.windowCount} window{session.windowCount !== 1 ? 's' : ''}
             </Paragraph>
@@ -86,13 +97,19 @@ function SessionCard({
               style={[
                 styles.statusChip,
                 {
-                  backgroundColor: session.isActive
-                    ? theme.colors.primaryContainer
-                    : theme.colors.surfaceVariant,
+                  backgroundColor: 'transparent',
+                  borderColor: session.isActive
+                    ? theme.colors.primary
+                    : theme.colors.outline,
                 },
               ]}
+              textStyle={{
+                color: session.isActive
+                  ? theme.colors.primary
+                  : theme.colors.onSurfaceVariant,
+              }}
             >
-              {session.isActive ? 'Active' : 'Inactive'}
+              {session.isActive ? 'ACTIVE' : 'INACTIVE'}
             </Chip>
             <IconButton icon="delete" size={20} onPress={() => onKill(session.id)} />
           </View>
@@ -109,8 +126,14 @@ function SessionCard({
       </Card.Content>
 
       <Card.Actions>
-        <Button mode="contained" onPress={() => onAttach(session.id)}>
-          Attach
+        <Button
+          mode="outlined"
+          onPress={() => onAttach(session.id)}
+          style={{ borderColor: theme.colors.primary, borderRadius: 0 }}
+          labelStyle={{ fontFamily: 'RobotoMono_500Medium' }}
+          textColor={theme.colors.primary}
+        >
+          ATTACH
         </Button>
       </Card.Actions>
     </Card>
@@ -203,8 +226,10 @@ export default function SessionsScreen() {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
         <Title style={styles.headerTitle}>Sessions - {activeConnection.name}</Title>
-        <Paragraph style={styles.headerSubtitle}>
-          {sessions.length} session{sessions.length !== 1 ? 's' : ''} found
+        <Paragraph
+          style={[styles.headerSubtitle, { fontFamily: 'RobotoMono_400Regular' }]}
+        >
+          {'>'} {sessions.length} session{sessions.length !== 1 ? 's' : ''} found
         </Paragraph>
       </View>
 
@@ -240,6 +265,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     opacity: 0.7,
+    fontFamily: 'RobotoMono_400Regular',
   },
   header: {
     padding: 16,
@@ -260,6 +286,7 @@ const styles = StyleSheet.create({
   },
   sessionCard: {
     marginBottom: 12,
+    borderRadius: 0,
   },
   cardHeader: {
     flexDirection: 'row',

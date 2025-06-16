@@ -49,9 +49,9 @@ This section outlines the selected technologies for building, testing, and deplo
 
 ### 3.2. Testing Strategy
 
-| Category             | Technology                              | Why?                                                                                                                                |
-| :------------------- | :-------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------- |
-| **Unit/Integration** | **Jest + React Native Testing Library** | The industry standard for testing React Native components and logic. Promotes user-centric tests that are resilient to refactoring. |
+| Category             | Technology                              | Why?                                                                                                                                               |
+| :------------------- | :-------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Unit/Integration** | **Jest + React Native Testing Library** | The industry standard for testing React Native components and logic. Promotes user-centric tests that are resilient to refactoring.                |
 | **End-to-End (E2E)** | **Maestro**                             | A modern, declarative mobile UI testing framework. YAML-based test flows that are easy to write and maintain, with excellent React Native support. |
 
 ### 3.3. Developer Experience (DX) & Tooling

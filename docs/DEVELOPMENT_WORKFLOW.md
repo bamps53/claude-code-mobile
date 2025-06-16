@@ -11,11 +11,13 @@ This document outlines the structured approach for implementing the remaining fe
 **Branch**: `feature/ssh-connection-implementation`
 
 **Files to modify:**
+
 - `src/store/index.ts` - Replace mock `connectToServer` function
 - `src/utils/ssh.ts` - Create SSH connection utilities (new file)
 - `src/types/index.ts` - Add SSH connection types
 
 **Implementation requirements:**
+
 - Integrate `@dylankenneally/react-native-ssh-sftp` library
 - Support password and SSH key authentication
 - Implement connection error handling with user-friendly messages
@@ -23,6 +25,7 @@ This document outlines the structured approach for implementing the remaining fe
 - Secure credential validation
 
 **Testing:**
+
 ```bash
 npm test src/__tests__/ssh.test.ts        # Unit tests
 npm run test:e2e:connection               # E2E connection tests
@@ -33,11 +36,13 @@ npm run test:e2e:connection               # E2E connection tests
 **Branch**: `feature/tmux-session-management`
 
 **Files to modify:**
+
 - `src/store/index.ts` - Implement session management functions
 - `src/utils/tmux.ts` - tmux command execution utilities (new file)
 - `src/screens/SessionsScreen.tsx` - Remove mock data integration
 
 **Implementation requirements:**
+
 - Real-time tmux session listing via SSH commands
 - Session creation with custom names
 - Session attach/detach operations
@@ -45,6 +50,7 @@ npm run test:e2e:connection               # E2E connection tests
 - Live session metadata updates (last activity, window count)
 
 **Testing:**
+
 ```bash
 npm test src/__tests__/tmux.test.ts       # Unit tests
 npm run test:e2e:navigation               # E2E session tests
@@ -57,12 +63,14 @@ npm run test:e2e:navigation               # E2E session tests
 **Branch**: `feature/connection-profile-crud`
 
 **Files to modify:**
+
 - `src/screens/ConnectionScreen.tsx` - Add CRUD operations
 - `src/components/ConnectionForm.tsx` - New connection form component
 - `src/components/ConnectionEditModal.tsx` - Edit modal component
 - `src/store/index.ts` - Profile management actions
 
 **Implementation requirements:**
+
 - Add connection profile form with validation
 - Edit existing connection profiles
 - Delete connections with confirmation dialog
@@ -74,11 +82,13 @@ npm run test:e2e:navigation               # E2E session tests
 **Branch**: `feature/settings-completion`
 
 **Files to modify:**
+
 - `src/screens/SettingsScreen.tsx` - Complete all settings functionality
 - `src/components/ThemeSelector.tsx` - Theme selection component
 - `src/components/SecuritySettings.tsx` - Security preferences component
 
 **Implementation requirements:**
+
 - Complete theme switching implementation
 - Font size adjustment with live preview
 - Biometric authentication setup
@@ -93,11 +103,13 @@ npm run test:e2e:navigation               # E2E session tests
 **Branch**: `feature/push-notifications`
 
 **New files:**
+
 - `server/notification-listener.js` - Server-side tmux output monitoring
 - `src/services/notifications.ts` - Client notification handling
 - `src/utils/notificationSetup.ts` - Push notification configuration
 
 **Implementation requirements:**
+
 - Server-side listener for BEL character (`\x07`) detection
 - Firebase Cloud Messaging (FCM) integration
 - Apple Push Notification Service (APNS) setup
@@ -154,16 +166,19 @@ git push origin feature/descriptive-name
 ### 2. Quality Assurance Standards
 
 #### Commit Level
+
 - **Husky pre-commit hooks**: ESLint, Prettier, basic validation
 - **TypeScript strict mode**: All new code must be type-safe
 - **Conventional commits**: Use `feat:`, `fix:`, `docs:`, etc.
 
 #### Push Level
+
 - **Pre-push hooks**: TypeScript compilation check
 - **CI/CD validation**: Complete quality pipeline
 - **Test coverage**: Maintain >80% coverage
 
 #### Release Level
+
 - **Production builds**: Automated EAS builds on version tags
 - **Store submission**: Automatic submission to app stores
 - **Release notes**: Generated from conventional commits
@@ -171,6 +186,7 @@ git push origin feature/descriptive-name
 ### 3. Testing Strategy
 
 #### Unit Tests (Jest)
+
 ```bash
 # Run all unit tests
 npm test
@@ -186,6 +202,7 @@ npm test src/store/index.test.ts
 ```
 
 #### E2E Tests (Maestro)
+
 ```bash
 # Smoke tests (core functionality)
 npm run test:e2e:smoke
@@ -200,6 +217,7 @@ npm run test:e2e
 ```
 
 #### Integration Testing
+
 - Test SSH connections with real servers
 - Validate tmux session operations
 - Test biometric authentication flows
@@ -237,6 +255,7 @@ npm test && npm run typecheck && npm run lint
 ### Environment Variables
 
 Create `.env.local` file:
+
 ```env
 # Expo configuration
 EXPO_PUBLIC_API_URL=your-api-url
@@ -251,6 +270,7 @@ EXPO_PUBLIC_ANALYTICS_ID=your-analytics-id
 ### Development Releases
 
 Automatic on every push to main:
+
 ```bash
 git checkout main
 git pull origin main
@@ -282,18 +302,21 @@ git push origin main --tags
 ## 📊 Monitoring and Maintenance
 
 ### Code Quality Metrics
+
 - **TypeScript coverage**: 100% (strict mode)
 - **Test coverage**: >80%
 - **ESLint violations**: 0
 - **Security vulnerabilities**: 0 high/critical
 
 ### Performance Monitoring
+
 - App startup time
 - Memory usage monitoring
 - Network request performance
 - Crash reporting (via Expo)
 
 ### Dependency Management
+
 - **Dependabot**: Automatic weekly dependency updates
 - **Security audits**: Automated vulnerability scanning
 - **License compliance**: Regular license verification
@@ -301,6 +324,7 @@ git push origin main --tags
 ## 🆘 Troubleshooting Common Issues
 
 ### Development Build Issues
+
 ```bash
 # Clear cache and rebuild
 expo r -c
@@ -308,6 +332,7 @@ eas build --profile development --platform android --clear-cache
 ```
 
 ### Testing Issues
+
 ```bash
 # Reset Jest cache
 npm test -- --clearCache
@@ -317,6 +342,7 @@ maestro studio  # Interactive debugging
 ```
 
 ### Type Errors
+
 ```bash
 # Full TypeScript check
 npm run typecheck

@@ -7,10 +7,11 @@ Since Flipper has compatibility issues with React 19, we recommend using React N
 ### Option 1: React Native Debugger (Recommended)
 
 1. **Install React Native Debugger**:
+
    ```bash
    # macOS
    brew install --cask react-native-debugger
-   
+
    # Windows/Linux
    # Download from: https://github.com/jhen0409/react-native-debugger/releases
    ```
@@ -24,6 +25,7 @@ Since Flipper has compatibility issues with React 19, we recommend using React N
 ### Option 2: Chrome DevTools
 
 1. **Enable remote debugging**:
+
    ```bash
    npm start
    # Press 'd' in terminal or enable "Debug Remote JS" in Expo DevTools
@@ -53,6 +55,7 @@ npx expo start --dev-client
 For EAS development builds (required for SSH library):
 
 1. **Create development build**:
+
    ```bash
    eas build --profile development --platform android
    # or
@@ -60,6 +63,7 @@ For EAS development builds (required for SSH library):
    ```
 
 2. **Install on device and start development server**:
+
    ```bash
    npx expo start --dev-client
    ```
@@ -69,13 +73,16 @@ For EAS development builds (required for SSH library):
 ## Debugging Features
 
 ### State Management (Zustand)
+
 - Use Redux DevTools extension with Zustand devtools middleware
 - View state changes in real-time
 
 ### Network Debugging
+
 - Monitor SSH connections and API calls
 - Use React Native Network Inspector
 
 ### Performance
+
 - Use React Native Performance Monitor
 - Profile component renders with React DevTools Profiler

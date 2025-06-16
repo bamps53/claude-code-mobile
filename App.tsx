@@ -4,13 +4,21 @@
  */
 
 import 'react-native-gesture-handler';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { PaperProvider, MD3LightTheme, MD3DarkTheme } from 'react-native-paper';
-import { useColorScheme } from 'react-native';
+import { PaperProvider } from 'react-native-paper';
+import { useColorScheme, View, ActivityIndicator } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import * as Font from 'expo-font';
+import {
+  useFonts as useRobotoMono,
+  RobotoMono_400Regular,
+  RobotoMono_500Medium,
+  RobotoMono_700Bold,
+} from '@expo-google-fonts/roboto-mono';
 import AppNavigator from './src/navigation/AppNavigator';
 import { useAppStore } from './src/store';
+import { darkTheme, lightTheme } from './src/theme';
 
 /**
  * Main App component
@@ -20,6 +28,11 @@ import { useAppStore } from './src/store';
 export default function App() {
   const colorScheme = useColorScheme();
   const { settings } = useAppStore();
+  const [fontsLoaded] = useRobotoMono({
+    RobotoMono_400Regular,
+    RobotoMono_500Medium,
+    RobotoMono_700Bold,
+  });
 
   /**
    * Determines the active theme based on user settings and system preference
@@ -27,12 +40,27 @@ export default function App() {
    */
   const getTheme = () => {
     if (settings.theme === 'auto') {
-      return colorScheme === 'dark' ? MD3DarkTheme : MD3LightTheme;
+      return colorScheme === 'dark' ? darkTheme : lightTheme;
     }
-    return settings.theme === 'dark' ? MD3DarkTheme : MD3LightTheme;
+    return settings.theme === 'dark' ? darkTheme : lightTheme;
   };
 
   const theme = getTheme();
+
+  if (!fontsLoaded) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: '#0A0A0A',
+        }}
+      >
+        <ActivityIndicator size="large" color="#00FF41" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaProvider>

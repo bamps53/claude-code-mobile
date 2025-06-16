@@ -2,39 +2,38 @@
 # Quick validation that the app launches and core functionality works
 
 appId: host.exp.exponent
-name: "Smoke Test - Core Functionality"
+name: 'Smoke Test - Core Functionality'
 tags:
   - smoke
   - critical
 
 ---
-
 # App Launch and Initial State
 - launchApp
-- assertVisible: "Claude Code Mobile"
-- takeScreenshot: "01_app_launch.png"
+- assertVisible: 'Claude Code Mobile'
+- takeScreenshot: '01_app_launch.png'
 
 # Authentication Flow
-- tapOn: "Get Started"
-- assertVisible: "Connections"
+- tapOn: 'Get Started'
+- assertVisible: 'Connections'
 
 # Core Navigation Test
-- assertVisible: "Connections"
-- tapOn: "Sessions" 
-- assertVisible: "Sessions"
-- tapOn: "Settings"
-- assertVisible: "Appearance"
+- assertVisible: 'Connections'
+- tapOn: 'Sessions'
+- assertVisible: 'Sessions'
+- tapOn: 'Settings'
+- assertVisible: 'Appearance'
 
 # Settings Interaction Test
 - scrollUntilVisible:
     element:
-      text: "Terminal Font Size"
+      text: 'Terminal Font Size'
     direction: DOWN
-- assertVisible: "Terminal Font Size"
+- assertVisible: 'Terminal Font Size'
 
 # Back to main screen
-- tapOn: "Connections"
-- assertVisible: "Connections"
+- tapOn: 'Connections'
+- assertVisible: 'Connections'
 
 # Final screenshot
-- takeScreenshot: "02_smoke_test_complete.png"
+- takeScreenshot: '02_smoke_test_complete.png'

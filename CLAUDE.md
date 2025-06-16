@@ -9,6 +9,7 @@ Claude Code Mobile is a React Native application that provides secure mobile acc
 ## Development Commands
 
 ### Essential Development Commands
+
 ```bash
 # Start development server
 npm start
@@ -34,6 +35,7 @@ npm run test:e2e:connection # Run connection tests
 ```
 
 ### Build Commands (EAS Build Required)
+
 ```bash
 # Development builds (for on-device debugging)
 eas build --profile development --platform ios
@@ -54,6 +56,7 @@ npx expo start --dev-client
 ## Architecture Overview
 
 ### Core Technology Stack
+
 - **React Native 0.79.3 + React 19** - Latest versions with Expo SDK 53
 - **Zustand** - Lightweight state management with secure persistence
 - **React Native Paper** - Material Design UI components with theming
@@ -62,6 +65,7 @@ npx expo start --dev-client
 - **@dylankenneally/react-native-ssh-sftp** - SSH connectivity (requires EAS Build)
 
 ### Testing Infrastructure
+
 - **Unit Testing**: Jest with React Native Testing Library for component and logic tests
 - **E2E Testing**: Maestro with YAML-based test flows for UI automation
 - **Test Structure**:
@@ -70,19 +74,23 @@ npx expo start --dev-client
   - `.maestro/config.yaml` - Maestro configuration
 
 ### State Management Architecture
+
 The app uses a single Zustand store (`src/store/index.ts`) with:
+
 - **Secure persistence** via Expo SecureStore for credentials and settings
 - **In-memory session data** for security (no terminal output persistence)
 - **Action-based mutations** with TypeScript interfaces
 - **Multiple state slices**: connections, sessions, authentication, settings
 
 Key state management patterns:
+
 - Connection profiles stored securely with encrypted credentials
 - Session states managed in memory with real-time updates
 - Authentication state separate from persistent data
 - Settings persisted with theme and security preferences
 
 ### Navigation Structure
+
 ```
 App (Root with theme providers)
 ├── WelcomeScreen (Biometric authentication)
@@ -94,6 +102,7 @@ App (Root with theme providers)
 ```
 
 ### Security Architecture
+
 - **Multi-layer authentication**: SSH (primary) + biometrics/PIN (secondary)
 - **Secure credential storage**: Expo SecureStore with native OS secure enclaves
 - **Session timeout**: Configurable auto-lock functionality
@@ -102,12 +111,14 @@ App (Root with theme providers)
 ## Key Implementation Details
 
 ### SSH Connection Management
+
 - Located in `src/store/index.ts` with mock implementations marked `TODO`
 - Connection profiles support both password and SSH key authentication
 - Auto-reconnection and connection monitoring capabilities
 - Secure storage of credentials using Expo SecureStore
 
 ### Terminal Interface
+
 - WebView-based terminal using xterm.js 5.3.0 in `src/screens/TerminalScreen.tsx`
 - Full terminal emulation with escape sequences, colors, cursor movement
 - Dynamic theming based on app theme settings
@@ -115,6 +126,7 @@ App (Root with theme providers)
 - Real-time command input/output via WebView messaging
 
 ### tmux Session Management
+
 - Session lifecycle operations: create, attach, detach, kill
 - Real-time metadata tracking: creation time, last activity, window count
 - Mock data currently in place (marked with `TODO` for real implementation)
@@ -122,6 +134,7 @@ App (Root with theme providers)
 ## Development Workflow
 
 ### Required Setup for Native Features
+
 EAS Build is **mandatory** due to the SSH library's native dependencies. Standard Expo Go cannot run this app.
 
 1. **Development builds** for on-device debugging
@@ -130,12 +143,14 @@ EAS Build is **mandatory** due to the SSH library's native dependencies. Standar
 4. **Connect device** to development server via QR code
 
 ### Debugging
+
 - React Native debugger tools (Flipper compatibility issues with React 19)
 - WebView debugging for terminal interface
 - Zustand DevTools for state inspection
 - Detox for E2E testing with device synchronization
 
 ### Code Quality Enforcement
+
 - **Husky pre-commit hooks** automatically run linting and formatting
 - **TypeScript strict mode** enforces type safety
 - **ESLint + Prettier** with comprehensive rule sets
@@ -144,6 +159,7 @@ EAS Build is **mandatory** due to the SSH library's native dependencies. Standar
 ## Current Implementation Status
 
 ### Completed Infrastructure
+
 - Complete navigation and authentication flow
 - Zustand store with secure persistence layer
 - All major screen components with TypeScript interfaces
@@ -152,6 +168,7 @@ EAS Build is **mandatory** due to the SSH library's native dependencies. Standar
 - Build configuration and development tooling
 
 ### Implementation TODOs
+
 - **SSH connection implementation** - Replace mock connection logic with real SSH client
 - **tmux session management** - Implement actual tmux command execution
 - **Push notification system** - Server-side listener for task completion alerts
@@ -165,6 +182,7 @@ For detailed development procedures, feature implementation phases, and quality 
 📖 **[Development Workflow Guide](./docs/DEVELOPMENT_WORKFLOW.md)**
 
 ### Quick Development Start
+
 ```bash
 # Create feature branch
 git checkout -b feature/your-feature-name

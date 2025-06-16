@@ -156,39 +156,97 @@ export default function SettingsScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Appearance Section */}
-        <Card style={styles.section}>
+        <Card
+          style={[
+            styles.section,
+            {
+              elevation: 0,
+              borderWidth: 1,
+              borderColor: theme.colors.outline,
+              borderRadius: 0,
+            },
+          ]}
+        >
           <Card.Content>
-            <Title style={styles.sectionTitle}>Appearance</Title>
+            <Title style={[styles.sectionTitle, { fontFamily: 'RobotoMono_700Bold' }]}>
+              // APPEARANCE
+            </Title>
 
             <List.Item
               title="Theme"
-              description={`Current: ${settings.theme}`}
+              description={`> ${settings.theme.toUpperCase()}`}
+              descriptionStyle={{ fontFamily: 'RobotoMono_400Regular' }}
               left={props => <List.Icon {...props} icon="palette" />}
               right={() => (
                 <View style={styles.themeButtons}>
                   <Button
-                    mode={settings.theme === 'light' ? 'contained' : 'outlined'}
+                    mode="outlined"
                     compact
                     onPress={() => handleThemeChange('light')}
-                    style={styles.themeButton}
+                    style={[
+                      styles.themeButton,
+                      {
+                        borderColor:
+                          settings.theme === 'light'
+                            ? theme.colors.primary
+                            : theme.colors.outline,
+                        borderRadius: 0,
+                      },
+                    ]}
+                    labelStyle={{ fontFamily: 'RobotoMono_500Medium' }}
+                    textColor={
+                      settings.theme === 'light'
+                        ? theme.colors.primary
+                        : theme.colors.onSurfaceVariant
+                    }
                   >
-                    Light
+                    LIGHT
                   </Button>
                   <Button
-                    mode={settings.theme === 'dark' ? 'contained' : 'outlined'}
+                    mode="outlined"
                     compact
                     onPress={() => handleThemeChange('dark')}
-                    style={styles.themeButton}
+                    style={[
+                      styles.themeButton,
+                      {
+                        borderColor:
+                          settings.theme === 'dark'
+                            ? theme.colors.primary
+                            : theme.colors.outline,
+                        borderRadius: 0,
+                      },
+                    ]}
+                    labelStyle={{ fontFamily: 'RobotoMono_500Medium' }}
+                    textColor={
+                      settings.theme === 'dark'
+                        ? theme.colors.primary
+                        : theme.colors.onSurfaceVariant
+                    }
                   >
-                    Dark
+                    DARK
                   </Button>
                   <Button
-                    mode={settings.theme === 'auto' ? 'contained' : 'outlined'}
+                    mode="outlined"
                     compact
                     onPress={() => handleThemeChange('auto')}
-                    style={styles.themeButton}
+                    style={[
+                      styles.themeButton,
+                      {
+                        borderColor:
+                          settings.theme === 'auto'
+                            ? theme.colors.primary
+                            : theme.colors.outline,
+                        borderRadius: 0,
+                      },
+                    ]}
+                    labelStyle={{ fontFamily: 'RobotoMono_500Medium' }}
+                    textColor={
+                      settings.theme === 'auto'
+                        ? theme.colors.primary
+                        : theme.colors.onSurfaceVariant
+                    }
                   >
-                    Auto
+                    AUTO
                   </Button>
                 </View>
               )}
@@ -196,7 +254,8 @@ export default function SettingsScreen() {
 
             <List.Item
               title="Terminal Font Size"
-              description={`Current: ${settings.fontSize}px`}
+              description={`> ${settings.fontSize}px`}
+              descriptionStyle={{ fontFamily: 'RobotoMono_400Regular' }}
               left={props => <List.Icon {...props} icon="format-size" />}
               right={() => (
                 <View style={styles.fontSizeButtons}>
@@ -208,7 +267,14 @@ export default function SettingsScreen() {
                   >
                     A-
                   </Button>
-                  <Text style={styles.fontSizeText}>{settings.fontSize}</Text>
+                  <Text
+                    style={[
+                      styles.fontSizeText,
+                      { fontFamily: 'RobotoMono_500Medium' },
+                    ]}
+                  >
+                    {settings.fontSize}
+                  </Text>
                   <Button
                     mode="outlined"
                     compact
@@ -224,9 +290,21 @@ export default function SettingsScreen() {
         </Card>
 
         {/* Security Section */}
-        <Card style={styles.section}>
+        <Card
+          style={[
+            styles.section,
+            {
+              elevation: 0,
+              borderWidth: 1,
+              borderColor: theme.colors.outline,
+              borderRadius: 0,
+            },
+          ]}
+        >
           <Card.Content>
-            <Title style={styles.sectionTitle}>Security</Title>
+            <Title style={[styles.sectionTitle, { fontFamily: 'RobotoMono_700Bold' }]}>
+              // SECURITY
+            </Title>
 
             <List.Item
               title="Biometric Authentication"
@@ -254,10 +332,25 @@ export default function SettingsScreen() {
                   {[5, 15, 30, 60].map(minutes => (
                     <Button
                       key={minutes}
-                      mode={settings.autoTimeout === minutes ? 'contained' : 'outlined'}
+                      mode="outlined"
                       compact
                       onPress={() => handleAutoTimeoutChange(minutes)}
-                      style={styles.timeoutButton}
+                      style={[
+                        styles.timeoutButton,
+                        {
+                          borderColor:
+                            settings.autoTimeout === minutes
+                              ? theme.colors.primary
+                              : theme.colors.outline,
+                          borderRadius: 0,
+                        },
+                      ]}
+                      labelStyle={{ fontFamily: 'RobotoMono_500Medium' }}
+                      textColor={
+                        settings.autoTimeout === minutes
+                          ? theme.colors.primary
+                          : theme.colors.onSurfaceVariant
+                      }
                     >
                       {minutes}m
                     </Button>
@@ -269,9 +362,21 @@ export default function SettingsScreen() {
         </Card>
 
         {/* Notifications Section */}
-        <Card style={styles.section}>
+        <Card
+          style={[
+            styles.section,
+            {
+              elevation: 0,
+              borderWidth: 1,
+              borderColor: theme.colors.outline,
+              borderRadius: 0,
+            },
+          ]}
+        >
           <Card.Content>
-            <Title style={styles.sectionTitle}>Notifications</Title>
+            <Title style={[styles.sectionTitle, { fontFamily: 'RobotoMono_700Bold' }]}>
+              // NOTIFICATIONS
+            </Title>
 
             <List.Item
               title="Push Notifications"
@@ -288,9 +393,21 @@ export default function SettingsScreen() {
         </Card>
 
         {/* Data & Privacy Section */}
-        <Card style={styles.section}>
+        <Card
+          style={[
+            styles.section,
+            {
+              elevation: 0,
+              borderWidth: 1,
+              borderColor: theme.colors.outline,
+              borderRadius: 0,
+            },
+          ]}
+        >
           <Card.Content>
-            <Title style={styles.sectionTitle}>Data & Privacy</Title>
+            <Title style={[styles.sectionTitle, { fontFamily: 'RobotoMono_700Bold' }]}>
+              // DATA & PRIVACY
+            </Title>
 
             <List.Item
               title="Clear All Data"
@@ -311,13 +428,26 @@ export default function SettingsScreen() {
         </Card>
 
         {/* App Info Section */}
-        <Card style={styles.section}>
+        <Card
+          style={[
+            styles.section,
+            {
+              elevation: 0,
+              borderWidth: 1,
+              borderColor: theme.colors.outline,
+              borderRadius: 0,
+            },
+          ]}
+        >
           <Card.Content>
-            <Title style={styles.sectionTitle}>About</Title>
+            <Title style={[styles.sectionTitle, { fontFamily: 'RobotoMono_700Bold' }]}>
+              // ABOUT
+            </Title>
 
             <List.Item
               title="Claude Code Mobile"
-              description="Version 1.0.0"
+              description="> v1.0.0"
+              descriptionStyle={{ fontFamily: 'RobotoMono_400Regular' }}
               left={props => <List.Icon {...props} icon="information" />}
             />
 
