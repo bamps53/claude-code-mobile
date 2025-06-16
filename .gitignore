@@ -38,3 +38,6 @@ yarn-error.*
 
 android/
 ios/
+
+build*
+repomix-output.xml

@@ -3,8 +3,16 @@
  * @description Provides SSH connection management and command execution functionality
  */
 
+import { NativeModules } from 'react-native';
 import SSHClient from '@dylankenneally/react-native-ssh-sftp';
 import { SSHConnection } from '../types';
+
+// Debug: Check if native module is properly loaded
+console.log('NativeModules:', NativeModules);
+console.log('NativeModules.RNSSHClient:', NativeModules.RNSSHClient);
+console.log('SSHClient module loaded:', SSHClient);
+console.log('SSHClient.connectWithPassword:', SSHClient?.connectWithPassword);
+console.log('SSHClient.connectWithKey:', SSHClient?.connectWithKey);
 
 /**
  * Our SSH client wrapper interface
@@ -14,6 +22,12 @@ export interface SSHClientWrapper {
   executeCommand: (command: string) => Promise<string>;
   isConnected: () => boolean;
   disconnect: () => Promise<void>;
+  attachToTmuxSession: (
+    sessionName: string,
+    outputCallback: (data: string) => void
+  ) => Promise<void>;
+  detachFromTmuxSession: () => Promise<void>;
+  sendToTmuxSession: (data: string) => Promise<void>;
 }
 
 // Export alias for backward compatibility
@@ -115,6 +129,9 @@ class SSHClientWrapperImpl implements SSHClientWrapper {
   private client: InstanceType<typeof SSHClient>;
   private connectionConfig: SSHConfig;
   private connected: boolean = false;
+  private currentTmuxSession: string | null = null;
+  private outputCallback: ((data: string) => void) | null = null;
+  private outputPollingTimeout: NodeJS.Timeout | null = null;
 
   constructor(client: InstanceType<typeof SSHClient>, config: SSHConfig) {
     this.client = client;
@@ -168,6 +185,9 @@ class SSHClientWrapperImpl implements SSHClientWrapper {
    */
   async disconnect(): Promise<void> {
     try {
+      // Stop output monitoring first
+      await this.detachFromTmuxSession();
+
       if (this.connected) {
         await this.client.disconnect();
         this.connected = false;
@@ -186,6 +206,176 @@ class SSHClientWrapperImpl implements SSHClientWrapper {
    */
   setConnected(connected: boolean): void {
     this.connected = connected;
+  }
+
+  /**
+   * Attaches to a tmux session and starts monitoring output
+   * @description Begins real-time output streaming from the specified tmux session
+   * @param sessionName - Name of the tmux session to attach to
+   * @param outputCallback - Callback function to receive output data
+   * @returns Promise that resolves when attachment is successful
+   * @throws Error if attachment fails
+   * @example
+   * ```typescript
+   * await sshClient.attachToTmuxSession('my-session', (data) => {
+   *   console.log('Received:', data);
+   * });
+   * ```
+   */
+  async attachToTmuxSession(
+    sessionName: string,
+    outputCallback: (data: string) => void
+  ): Promise<void> {
+    try {
+      if (!this.isConnected()) {
+        throw new Error('SSH client is not connected');
+      }
+
+      // Detach from any existing session first
+      await this.detachFromTmuxSession();
+
+      this.currentTmuxSession = sessionName;
+      this.outputCallback = outputCallback;
+
+      // Send initial welcome message
+      outputCallback(`\x1b[32mAttaching to tmux session: ${sessionName}\x1b[0m\r\n`);
+
+      // Start output monitoring with tmux capture-pane
+      this.startOutputMonitoring();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to attach to tmux session: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Detaches from the current tmux session
+   * @description Stops output monitoring and clears session state
+   * @returns Promise that resolves when detachment is complete
+   */
+  async detachFromTmuxSession(): Promise<void> {
+    try {
+      // Stop output polling
+      if (this.outputPollingTimeout) {
+        clearTimeout(this.outputPollingTimeout);
+        this.outputPollingTimeout = null;
+      }
+
+      // Clear session state
+      this.currentTmuxSession = null;
+      this.outputCallback = null;
+    } catch (error) {
+      console.warn('Error during tmux detach:', error);
+    }
+  }
+
+  /**
+   * Sends input data to the current tmux session
+   * @description Sends keystrokes to the attached tmux session
+   * @param data - Input data to send
+   * @returns Promise that resolves when data is sent
+   * @throws Error if no session is attached or sending fails
+   * @example
+   * ```typescript
+   * await sshClient.sendToTmuxSession('ls -la\n');
+   * ```
+   */
+  async sendToTmuxSession(data: string): Promise<void> {
+    try {
+      if (!this.currentTmuxSession) {
+        throw new Error('No tmux session attached');
+      }
+
+      if (!this.isConnected()) {
+        throw new Error('SSH client is not connected');
+      }
+
+      // Send keys to the tmux session
+      const escapedData = data.replace(/"/g, '\\"');
+      await this.client.execute(
+        `tmux send-keys -t "${this.currentTmuxSession}" "${escapedData}"`
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to send data to tmux session: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Starts output monitoring for the current tmux session
+   * @description Begins intelligent monitoring of tmux output for changes
+   * @private
+   */
+  private startOutputMonitoring(): void {
+    if (!this.currentTmuxSession || !this.outputCallback) {
+      return;
+    }
+
+    let lastCaptureHash = '';
+    let consecutiveEmptyChecks = 0;
+    const maxEmptyChecks = 20; // Reduce polling frequency after no activity
+
+    // Intelligent polling with adaptive frequency
+    const poll = async () => {
+      try {
+        if (!this.currentTmuxSession || !this.outputCallback || !this.isConnected()) {
+          return;
+        }
+
+        // Capture the entire scrollback history for the session
+        const output = await this.client.execute(
+          `tmux capture-pane -t "${this.currentTmuxSession}" -p -S -3000`
+        );
+
+        // Create a simple hash to detect changes
+        const currentHash = this.simpleHash(output);
+
+        if (currentHash !== lastCaptureHash) {
+          // Output has changed - send the current screen content
+          if (output && output.trim()) {
+            // Send the full current screen content
+            this.outputCallback('\x1b[2J\x1b[H' + output); // Clear screen and show current content
+          }
+          lastCaptureHash = currentHash;
+          consecutiveEmptyChecks = 0;
+        } else {
+          consecutiveEmptyChecks++;
+        }
+
+        // Adaptive polling frequency
+        let nextInterval = 150; // Base interval
+        if (consecutiveEmptyChecks > maxEmptyChecks) {
+          nextInterval = 500; // Slow down if no activity
+        }
+
+        this.outputPollingTimeout = setTimeout(poll, nextInterval);
+      } catch (error) {
+        // Reduce error spam but continue monitoring
+        console.debug('Output monitoring error:', error);
+        this.outputPollingTimeout = setTimeout(poll, 300);
+      }
+    };
+
+    // Start monitoring
+    poll();
+  }
+
+  /**
+   * Creates a simple hash for change detection
+   * @description Fast hash function for detecting output changes
+   * @param str - String to hash
+   * @returns Simple hash value
+   * @private
+   */
+  private simpleHash(str: string): string {
+    let hash = 0;
+    if (str.length === 0) return hash.toString();
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return hash.toString();
   }
 }
 
@@ -228,6 +418,13 @@ export async function createSSHConnection(
   }
 
   try {
+    // Check if SSHClient is properly loaded
+    if (!SSHClient || typeof SSHClient.connectWithPassword !== 'function') {
+      throw new Error(
+        'SSH module not properly loaded. Please rebuild the app with EAS development build.'
+      );
+    }
+
     let client: InstanceType<typeof SSHClient>;
 
     // Connect using the appropriate authentication method
@@ -236,6 +433,7 @@ export async function createSSHConnection(
         throw new Error('Password is required for password authentication');
       }
 
+      console.log('Attempting SSH connection with password to:', config.host);
       client = await SSHClient.connectWithPassword(
         config.host,
         config.port,
@@ -247,6 +445,7 @@ export async function createSSHConnection(
         throw new Error('Private key is required for key authentication');
       }
 
+      console.log('Attempting SSH connection with key to:', config.host);
       // Extract passphrase from private key if provided
       // For now, we assume no passphrase. This can be enhanced later.
       client = await SSHClient.connectWithKey(
@@ -263,8 +462,19 @@ export async function createSSHConnection(
     // Create wrapper instance
     const wrapper = new SSHClientWrapperImpl(client, config);
 
+    console.log('SSH connection successful');
     return wrapper;
   } catch (error) {
+    console.error('SSH connection error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+    // Check if it's a native module loading issue
+    if (errorMessage.includes('null') || errorMessage.includes('undefined')) {
+      throw new Error(
+        'SSH native module not loaded. Please ensure you are running a development build created with EAS Build, not Expo Go.'
+      );
+    }
+
     const friendlyError = createUserFriendlyError(error as Error);
     throw new Error(friendlyError);
   }

@@ -11,10 +11,10 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  TouchableOpacity,
 } from 'react-native';
 import {
-  Modal,
-  Portal,
   Card,
   Title,
   TextInput,
@@ -253,205 +253,221 @@ export default function AddConnectionModal({
   };
 
   return (
-    <Portal>
-      <Modal
-        visible={visible}
-        onDismiss={onDismiss}
-        contentContainerStyle={[
-          styles.modalContainer,
-          { backgroundColor: theme.colors.surface },
-        ]}
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={onDismiss}
+    >
+      <TouchableOpacity
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={onDismiss}
       >
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.keyboardAvoid}
         >
-          <Card>
-            <Card.Content>
-              <Title style={styles.modalTitle}>
-                {editConnection ? 'Edit Connection' : 'Add SSH Connection'}
-              </Title>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={e => e.stopPropagation()}
+            style={[styles.modalContainer, { backgroundColor: theme.colors.surface }]}
+          >
+            <Card>
+              <Card.Content>
+                <Title style={styles.modalTitle}>
+                  {editConnection ? 'Edit Connection' : 'Add SSH Connection'}
+                </Title>
 
-              <ScrollView
-                style={styles.formContainer}
-                showsVerticalScrollIndicator={false}
-              >
-                {/* Connection Name */}
-                <TextInput
-                  label="Connection Name"
-                  value={formData.name}
-                  onChangeText={value => updateField('name', value)}
-                  mode="outlined"
-                  style={styles.input}
-                  error={!!errors.name}
-                  autoCapitalize="words"
-                />
-                <HelperText type="error" visible={!!errors.name}>
-                  {errors.name}
-                </HelperText>
-
-                {/* Host */}
-                <TextInput
-                  label="Host"
-                  value={formData.host}
-                  onChangeText={value => updateField('host', value)}
-                  mode="outlined"
-                  style={styles.input}
-                  error={!!errors.host}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  placeholder="192.168.1.100 or myserver.com"
-                />
-                <HelperText type="error" visible={!!errors.host}>
-                  {errors.host}
-                </HelperText>
-
-                {/* Port */}
-                <TextInput
-                  label="Port"
-                  value={formData.port}
-                  onChangeText={value => updateField('port', value)}
-                  mode="outlined"
-                  style={styles.input}
-                  error={!!errors.port}
-                  keyboardType="numeric"
-                  placeholder="22"
-                />
-                <HelperText type="error" visible={!!errors.port}>
-                  {errors.port}
-                </HelperText>
-
-                {/* Username */}
-                <TextInput
-                  label="Username"
-                  value={formData.username}
-                  onChangeText={value => updateField('username', value)}
-                  mode="outlined"
-                  style={styles.input}
-                  error={!!errors.username}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-                <HelperText type="error" visible={!!errors.username}>
-                  {errors.username}
-                </HelperText>
-
-                <Divider style={styles.divider} />
-
-                {/* Authentication Type */}
-                <Text variant="titleMedium" style={styles.sectionTitle}>
-                  Authentication Method
-                </Text>
-                <RadioButton.Group
-                  onValueChange={value => updateField('authType', value)}
-                  value={formData.authType}
+                <ScrollView
+                  style={styles.formContainer}
+                  showsVerticalScrollIndicator={false}
                 >
-                  <View style={styles.radioOption}>
-                    <RadioButton value="password" />
-                    <Text variant="bodyLarge" style={styles.radioLabel}>
-                      Password
-                    </Text>
-                  </View>
-                  <View style={styles.radioOption}>
-                    <RadioButton value="key" />
-                    <Text variant="bodyLarge" style={styles.radioLabel}>
-                      SSH Key
-                    </Text>
-                  </View>
-                </RadioButton.Group>
+                  {/* Connection Name */}
+                  <TextInput
+                    label="Connection Name"
+                    value={formData.name}
+                    onChangeText={value => updateField('name', value)}
+                    mode="outlined"
+                    style={styles.input}
+                    error={!!errors.name}
+                    autoCapitalize="words"
+                  />
+                  <HelperText type="error" visible={!!errors.name}>
+                    {errors.name}
+                  </HelperText>
 
-                {/* Password Field */}
-                {formData.authType === 'password' && (
-                  <>
-                    <TextInput
-                      label="Password"
-                      value={formData.password}
-                      onChangeText={value => updateField('password', value)}
-                      mode="outlined"
-                      style={styles.input}
-                      error={!!errors.password}
-                      secureTextEntry
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                    <HelperText type="error" visible={!!errors.password}>
-                      {errors.password}
-                    </HelperText>
-                  </>
-                )}
+                  {/* Host */}
+                  <TextInput
+                    label="Host"
+                    value={formData.host}
+                    onChangeText={value => updateField('host', value)}
+                    mode="outlined"
+                    style={styles.input}
+                    error={!!errors.host}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    placeholder="192.168.1.100 or myserver.com"
+                  />
+                  <HelperText type="error" visible={!!errors.host}>
+                    {errors.host}
+                  </HelperText>
 
-                {/* Private Key Field */}
-                {formData.authType === 'key' && (
-                  <>
-                    <TextInput
-                      label="Private Key"
-                      value={formData.privateKey}
-                      onChangeText={value => updateField('privateKey', value)}
-                      mode="outlined"
-                      style={[styles.input, styles.multilineInput]}
-                      error={!!errors.privateKey}
-                      multiline
-                      numberOfLines={6}
-                      placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                    <HelperText type="error" visible={!!errors.privateKey}>
-                      {errors.privateKey}
-                    </HelperText>
-                  </>
-                )}
-              </ScrollView>
-            </Card.Content>
+                  {/* Port */}
+                  <TextInput
+                    label="Port"
+                    value={formData.port}
+                    onChangeText={value => updateField('port', value)}
+                    mode="outlined"
+                    style={styles.input}
+                    error={!!errors.port}
+                    keyboardType="numeric"
+                    placeholder="22"
+                  />
+                  <HelperText type="error" visible={!!errors.port}>
+                    {errors.port}
+                  </HelperText>
 
-            <Card.Actions style={styles.actions}>
-              <Button
-                mode="outlined"
-                onPress={handleTestConnection}
-                disabled={isLoading || isTesting}
-                style={styles.testButton}
-              >
-                {isTesting ? (
-                  <ActivityIndicator size="small" color={theme.colors.primary} />
-                ) : (
-                  'Test Connection'
-                )}
-              </Button>
+                  {/* Username */}
+                  <TextInput
+                    label="Username"
+                    value={formData.username}
+                    onChangeText={value => updateField('username', value)}
+                    mode="outlined"
+                    style={styles.input}
+                    error={!!errors.username}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                  <HelperText type="error" visible={!!errors.username}>
+                    {errors.username}
+                  </HelperText>
 
-              <View style={styles.primaryActions}>
-                <Button mode="text" onPress={onDismiss} disabled={isLoading}>
-                  Cancel
-                </Button>
+                  <Divider style={styles.divider} />
+
+                  {/* Authentication Type */}
+                  <Text variant="titleMedium" style={styles.sectionTitle}>
+                    Authentication Method
+                  </Text>
+                  <RadioButton.Group
+                    onValueChange={value => updateField('authType', value)}
+                    value={formData.authType}
+                  >
+                    <View style={styles.radioOption}>
+                      <RadioButton value="password" />
+                      <Text variant="bodyLarge" style={styles.radioLabel}>
+                        Password
+                      </Text>
+                    </View>
+                    <View style={styles.radioOption}>
+                      <RadioButton value="key" />
+                      <Text variant="bodyLarge" style={styles.radioLabel}>
+                        SSH Key
+                      </Text>
+                    </View>
+                  </RadioButton.Group>
+
+                  {/* Password Field */}
+                  {formData.authType === 'password' && (
+                    <>
+                      <TextInput
+                        label="Password"
+                        value={formData.password}
+                        onChangeText={value => updateField('password', value)}
+                        mode="outlined"
+                        style={styles.input}
+                        error={!!errors.password}
+                        secureTextEntry
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                      <HelperText type="error" visible={!!errors.password}>
+                        {errors.password}
+                      </HelperText>
+                    </>
+                  )}
+
+                  {/* Private Key Field */}
+                  {formData.authType === 'key' && (
+                    <>
+                      <TextInput
+                        label="Private Key"
+                        value={formData.privateKey}
+                        onChangeText={value => updateField('privateKey', value)}
+                        mode="outlined"
+                        style={[styles.input, styles.multilineInput]}
+                        error={!!errors.privateKey}
+                        multiline
+                        numberOfLines={6}
+                        placeholder="-----BEGIN PRIVATE KEY-----&#10;...&#10;-----END PRIVATE KEY-----"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                      <HelperText type="error" visible={!!errors.privateKey}>
+                        {errors.privateKey}
+                      </HelperText>
+                    </>
+                  )}
+                </ScrollView>
+              </Card.Content>
+
+              <Card.Actions style={styles.actions}>
                 <Button
-                  mode="contained"
-                  onPress={handleSubmit}
+                  mode="outlined"
+                  onPress={handleTestConnection}
                   disabled={isLoading || isTesting}
-                  style={styles.saveButton}
+                  style={styles.testButton}
                 >
-                  {isLoading ? (
-                    <ActivityIndicator size="small" color={theme.colors.onPrimary} />
-                  ) : editConnection ? (
-                    'Update'
+                  {isTesting ? (
+                    <ActivityIndicator size="small" color={theme.colors.primary} />
                   ) : (
-                    'Save'
+                    'Test Connection'
                   )}
                 </Button>
-              </View>
-            </Card.Actions>
-          </Card>
+
+                <View style={styles.primaryActions}>
+                  <Button mode="text" onPress={onDismiss} disabled={isLoading}>
+                    Cancel
+                  </Button>
+                  <Button
+                    mode="contained"
+                    onPress={handleSubmit}
+                    disabled={isLoading || isTesting}
+                    style={styles.saveButton}
+                  >
+                    {isLoading ? (
+                      <ActivityIndicator size="small" color={theme.colors.onPrimary} />
+                    ) : editConnection ? (
+                      'Update'
+                    ) : (
+                      'Save'
+                    )}
+                  </Button>
+                </View>
+              </Card.Actions>
+            </Card>
+          </TouchableOpacity>
         </KeyboardAvoidingView>
-      </Modal>
-    </Portal>
+      </TouchableOpacity>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   modalContainer: {
     margin: 20,
+    borderRadius: 8,
+    width: '90%',
     maxHeight: '90%',
   },
   keyboardAvoid: {
-    flex: 1,
+    width: '100%',
   },
   modalTitle: {
     textAlign: 'center',

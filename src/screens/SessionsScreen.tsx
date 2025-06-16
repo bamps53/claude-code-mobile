@@ -40,23 +40,32 @@ function SessionCard({
   const theme = useTheme();
 
   /**
-   * Formats date for display
-   * @param date - Date to format
-   * @returns Formatted date string
+   * Safely formats date for display with relative time
+   * @param date - Date to format (can be Date object or string)
+   * @returns Formatted relative time string
    */
-  const formatDate = (date: Date) => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-    const diffDays = Math.floor(diffHours / 24);
+  const formatDate = (date: Date | string | undefined): string => {
+    if (!date) return 'Unknown';
 
-    if (diffMins < 60) {
-      return `${diffMins}m ago`;
-    } else if (diffHours < 24) {
-      return `${diffHours}h ago`;
-    } else {
-      return `${diffDays}d ago`;
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) return 'Invalid date';
+
+      const now = new Date();
+      const diffMs = now.getTime() - dateObj.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+
+      if (diffMins < 60) {
+        return `${diffMins}m ago`;
+      } else if (diffHours < 24) {
+        return `${diffHours}h ago`;
+      } else {
+        return `${diffDays}d ago`;
+      }
+    } catch (error) {
+      return 'Invalid date';
     }
   };
 

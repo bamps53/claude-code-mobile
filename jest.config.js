@@ -4,7 +4,8 @@
  */
 
 module.exports = {
-  testEnvironment: 'jsdom',
+  preset: 'jest-expo',
+  testEnvironment: 'node',
   setupFilesAfterEnv: ['<rootDir>/jest-setup.js'],
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.test.(js|jsx|ts|tsx)',
@@ -17,7 +18,7 @@ module.exports = {
     '<rootDir>/ios/',
   ],
   transformIgnorePatterns: [
-    'node_modules/(?!(@babel|@react-native-community|@testing-library|zustand))',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|react-native-paper)',
   ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
@@ -25,17 +26,7 @@ module.exports = {
     '!src/types/**/*',
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx'],
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['@babel/preset-env', '@babel/preset-typescript'] }],
-  },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    // Mock React Native modules
-    'react-native$': 'react-native-web',
-    'react-native-paper': '<rootDir>/jest-setup.js',
-    'expo-secure-store': '<rootDir>/jest-setup.js',
-    'expo-local-authentication': '<rootDir>/jest-setup.js',
-    'react-native-webview': '<rootDir>/jest-setup.js',
   },
 };

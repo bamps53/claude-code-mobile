@@ -75,6 +75,11 @@ interface AppStore extends AppState {
 
   // Terminal actions
   sendCommand: (sessionId: string, command: string) => void;
+  attachToTerminalSession: (
+    sessionId: string,
+    outputCallback: (data: string) => void
+  ) => Promise<void>;
+  detachFromTerminalSession: (sessionId: string) => Promise<void>;
 
   // Settings actions
   updateSettings: (settings: Partial<AppSettings>) => void;
@@ -365,14 +370,14 @@ export const useAppStore = create<AppStore>()(
           throw new Error('Session not found');
         }
 
-        const tmuxManager = tmuxManagers.get(session.connectionId);
-        if (!tmuxManager) {
-          throw new Error('Tmux manager not available');
+        const sshClient = sshClients.get(session.connectionId);
+        if (!sshClient) {
+          throw new Error('SSH client not available');
         }
 
         try {
-          // Send command to tmux session through manager
-          await tmuxManager.sendCommand(session.name, command);
+          // Send command directly to SSH client for real-time interaction
+          await sshClient.sendToTmuxSession(command);
 
           // Update session last activity
           set(state => ({
@@ -382,6 +387,65 @@ export const useAppStore = create<AppStore>()(
           }));
         } catch (error) {
           console.error('Failed to send command:', error);
+          throw error;
+        }
+      },
+
+      attachToTerminalSession: async (
+        sessionId: string,
+        outputCallback: (data: string) => void
+      ) => {
+        const session = get().sessions.find(s => s.id === sessionId);
+        if (!session) {
+          throw new Error('Session not found');
+        }
+
+        const sshClient = sshClients.get(session.connectionId);
+        if (!sshClient) {
+          throw new Error('SSH client not available');
+        }
+
+        try {
+          // Attach to tmux session with real-time output streaming
+          await sshClient.attachToTmuxSession(session.name, outputCallback);
+
+          // Update session as active
+          set(state => ({
+            sessions: state.sessions.map(s =>
+              s.id === sessionId
+                ? { ...s, isActive: true, lastActivity: new Date() }
+                : s
+            ),
+          }));
+        } catch (error) {
+          console.error('Failed to attach to terminal session:', error);
+          throw error;
+        }
+      },
+
+      detachFromTerminalSession: async (sessionId: string) => {
+        const session = get().sessions.find(s => s.id === sessionId);
+        if (!session) {
+          throw new Error('Session not found');
+        }
+
+        const sshClient = sshClients.get(session.connectionId);
+        if (!sshClient) {
+          throw new Error('SSH client not available');
+        }
+
+        try {
+          // Detach from tmux session
+          await sshClient.detachFromTmuxSession();
+
+          // Update session as inactive
+          set(state => ({
+            sessions: state.sessions.map(s =>
+              s.id === sessionId ? { ...s, isActive: false } : s
+            ),
+          }));
+        } catch (error) {
+          console.error('Failed to detach from terminal session:', error);
           throw error;
         }
       },
@@ -413,6 +477,18 @@ export const useAppStore = create<AppStore>()(
         settings: state.settings,
         // Don't persist authentication state and active sessions
       }),
+      // Handle date serialization/deserialization
+      onRehydrateStorage: () => state => {
+        if (state) {
+          // Convert string dates back to Date objects
+          state.connections = state.connections.map(conn => ({
+            ...conn,
+            lastConnected: conn.lastConnected
+              ? new Date(conn.lastConnected)
+              : undefined,
+          }));
+        }
+      },
     }
   )
 );

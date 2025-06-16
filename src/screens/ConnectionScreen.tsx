@@ -53,6 +53,23 @@ function ConnectionCard({
 }) {
   const theme = useTheme();
 
+  /**
+   * Safely formats a date for display
+   * @param date - Date to format (can be Date object or string)
+   * @returns Formatted date string or fallback text
+   */
+  const formatDate = (date: Date | string | undefined): string => {
+    if (!date) return 'Never';
+
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) return 'Invalid date';
+      return dateObj.toLocaleDateString();
+    } catch (error) {
+      return 'Invalid date';
+    }
+  };
+
   return (
     <Card style={styles.connectionCard}>
       <Card.Content>
@@ -97,11 +114,9 @@ function ConnectionCard({
           <Paragraph style={styles.authType}>
             Auth: {connection.authType === 'key' ? 'SSH Key' : 'Password'}
           </Paragraph>
-          {connection.lastConnected && (
-            <Paragraph style={styles.lastConnected}>
-              Last: {connection.lastConnected.toLocaleDateString()}
-            </Paragraph>
-          )}
+          <Paragraph style={styles.lastConnected}>
+            Last: {formatDate(connection.lastConnected)}
+          </Paragraph>
           {connection.connectionError && (
             <Paragraph style={[styles.connectionError, { color: theme.colors.error }]}>
               Error: {connection.connectionError}

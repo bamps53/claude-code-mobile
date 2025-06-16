@@ -31,8 +31,15 @@ export default function TerminalScreen() {
   const webViewRef = useRef<WebView>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { connections, sessions, settings, sendCommand, attachToSession } =
-    useAppStore();
+  const {
+    connections,
+    sessions,
+    settings,
+    sendCommand,
+    attachToSession,
+    attachToTerminalSession,
+    detachFromTerminalSession,
+  } = useAppStore();
 
   const connection = connections.find(c => c.id === connectionId);
   const session = sessions.find(s => s.id === sessionId);
@@ -40,7 +47,28 @@ export default function TerminalScreen() {
   useEffect(() => {
     if (connection && session) {
       attachToSession(sessionId);
+
+      // Attach to terminal session for real-time output
+      const handleOutputData = (data: string) => {
+        sendToTerminal(data);
+      };
+
+      attachToTerminalSession(sessionId, handleOutputData).catch(error => {
+        console.error('Failed to attach to terminal session:', error);
+        sendToTerminal(
+          `\x1b[31mError: Failed to attach to session - ${error.message}\x1b[0m\r\n`
+        );
+      });
     }
+
+    // Cleanup on unmount
+    return () => {
+      if (connection && session) {
+        detachFromTerminalSession(sessionId).catch(error => {
+          console.warn('Failed to detach from terminal session:', error);
+        });
+      }
+    };
   }, [sessionId, connectionId]);
 
   /**
@@ -188,10 +216,9 @@ export default function TerminalScreen() {
             rows: terminal.rows
         }));
 
-        // Welcome message
-        terminal.writeln('\\x1b[32mConnected to ${session?.name || 'session'}\\x1b[0m');
-        terminal.writeln('\\x1b[90mType commands or press Ctrl+C to interrupt\\x1b[0m');
-        terminal.write('\\x1b[36m$ \\x1b[0m');
+        // Welcome message - will be replaced by real SSH output
+        terminal.writeln('\\x1b[32mInitializing connection to ${session?.name || 'session'}...\\x1b[0m');
+        terminal.writeln('\\x1b[90mWaiting for SSH output...\\x1b[0m');
     </script>
 </body>
 </html>`;
@@ -211,6 +238,7 @@ export default function TerminalScreen() {
           break;
         case 'terminal_input':
           if (connection && session) {
+            // Send input directly to SSH client for immediate response
             sendCommand(sessionId, message.data);
           }
           break;

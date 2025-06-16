@@ -19,6 +19,9 @@ const mockSSHClient = {
   executeCommand: jest.fn(),
   isConnected: jest.fn().mockReturnValue(true),
   disconnect: jest.fn(),
+  attachToTmuxSession: jest.fn(),
+  detachFromTmuxSession: jest.fn(),
+  sendToTmuxSession: jest.fn(),
 };
 
 describe('Tmux Session Management', () => {

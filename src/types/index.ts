@@ -12,7 +12,7 @@ export interface SSHConnection {
   authType: 'password' | 'key';
   password?: string;
   privateKey?: string;
-  lastConnected?: Date;
+  lastConnected?: Date | string; // string when serialized, Date when in memory
   isConnected: boolean;
   connectionError?: string;
 }
@@ -26,8 +26,8 @@ export interface SSHConnectionResult {
 export interface TmuxSession {
   id: string;
   name: string;
-  created: Date;
-  lastActivity: Date;
+  created: Date | string; // string when serialized, Date when in memory
+  lastActivity: Date | string; // string when serialized, Date when in memory
   windowCount: number;
   isActive: boolean;
   connectionId: string;
