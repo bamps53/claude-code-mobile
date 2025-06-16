@@ -4,7 +4,14 @@
  */
 
 import React, { useState } from 'react';
-import { View, FlatList, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import {
   Card,
   Title,
@@ -288,7 +295,10 @@ export default function ConnectionScreen() {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       <FlatList
         data={connections}
         renderItem={renderConnection}
@@ -317,7 +327,7 @@ export default function ConnectionScreen() {
       >
         {snackbarMessage}
       </Snackbar>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

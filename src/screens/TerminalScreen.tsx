@@ -4,7 +4,13 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, Dimensions } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import { ActivityIndicator, useTheme } from 'react-native-paper';
@@ -240,7 +246,10 @@ export default function TerminalScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       {isLoading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -262,7 +271,7 @@ export default function TerminalScreen() {
         hideKeyboardAccessoryView={true}
         allowsInlineMediaPlayback={true}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

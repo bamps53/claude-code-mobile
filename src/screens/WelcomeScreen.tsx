@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { Button, Card, Title, Paragraph, useTheme } from 'react-native-paper';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useAppStore } from '../store';
@@ -55,32 +55,40 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Card style={styles.card}>
-        <Card.Content style={styles.cardContent}>
-          <Title style={styles.title}>Claude Code Mobile</Title>
-          <Paragraph style={styles.subtitle}>
-            Secure access to your remote development environment
-          </Paragraph>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <View style={styles.content}>
+        <Card style={styles.card}>
+          <Card.Content style={styles.cardContent}>
+            <Title style={styles.title}>Claude Code Mobile</Title>
+            <Paragraph style={styles.subtitle}>
+              Secure access to your remote development environment
+            </Paragraph>
 
-          <Button
-            mode="contained"
-            onPress={handleAuthentication}
-            loading={isAuthenticating}
-            disabled={isAuthenticating}
-            style={styles.button}
-            contentStyle={styles.buttonContent}
-          >
-            {isAuthenticating ? 'Authenticating...' : 'Get Started'}
-          </Button>
-        </Card.Content>
-      </Card>
-    </View>
+            <Button
+              mode="contained"
+              onPress={handleAuthentication}
+              loading={isAuthenticating}
+              disabled={isAuthenticating}
+              style={styles.button}
+              contentStyle={styles.buttonContent}
+            >
+              {isAuthenticating ? 'Authenticating...' : 'Get Started'}
+            </Button>
+          </Card.Content>
+        </Card>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  content: {
     flex: 1,
     justifyContent: 'center',
     padding: 20,

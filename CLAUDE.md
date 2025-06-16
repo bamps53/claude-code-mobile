@@ -41,7 +41,7 @@ eas build --profile development --platform android
 
 # Development builds (local)
 eas build --profile development --platform ios --local
-neas build --profile development --platform android --local
+eas build --profile development --platform android --local
 
 # Production builds
 eas build --profile production --platform ios
