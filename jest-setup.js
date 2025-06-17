@@ -3,6 +3,29 @@
  * @description Configures testing environment and mocks
  */
 
+// Setup Platform early for react-native-paper
+const mockPlatform = {
+  OS: 'ios',
+  select: jest.fn((obj) => obj.ios || obj.default || Object.values(obj)[0]),
+  Version: 14,
+};
+
+// Mock react-native before anything else loads
+jest.doMock('react-native', () => {
+  const RN = jest.requireActual('react-native');
+  Object.defineProperty(RN, 'Platform', {
+    value: mockPlatform,
+    writable: true,
+    configurable: true,
+  });
+  return RN;
+});
+
+// Mock Expo's new runtime system
+global.__ExpoImportMetaRegistry = new Map();
+global.__METRO_GLOBAL_PREFIX__ = '';
+global.__DEV__ = true;
+
 // Mock Expo modules
 jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn(),
@@ -38,6 +61,9 @@ jest.mock('react-native-webview', () => ({
   WebView: 'WebView',
 }));
 
+// Mock React Native components that cause issues
+jest.mock('react-native/Libraries/Modal/Modal', () => 'Modal');
+
 // Mock SSH library
 jest.mock('@dylankenneally/react-native-ssh-sftp', () => ({
   SSHClient: jest.fn(),
@@ -62,15 +88,24 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
-// Mock react-native modules
-jest.mock('react-native/Libraries/Utilities/Platform', () => ({
-  OS: 'ios',
-  select: jest.fn((obj) => obj.ios),
-}));
+// Additional Platform mock for compatibility
+jest.mock('react-native/Libraries/Utilities/Platform', () => mockPlatform);
+
+// Ensure Platform is available globally
+Object.defineProperty(global, 'Platform', {
+  value: mockPlatform,
+  writable: true,
+});
 
 // Mock Expo modules that cause issues
 jest.mock('expo', () => ({
   registerRootComponent: jest.fn(),
+}));
+
+// Mock react-native-paper theme system that uses Platform.select
+jest.mock('react-native-paper/src/styles/themes/v3/tokens', () => ({
+  ...jest.requireActual('react-native-paper/src/styles/themes/v3/tokens'),
+  Platform: mockPlatform,
 }));
 
 // Silence console warnings in tests

@@ -6,7 +6,13 @@
 module.exports = {
   preset: 'jest-expo',
   testEnvironment: 'node',
+  setupFiles: [
+    '<rootDir>/node_modules/react-native-gesture-handler/jestSetup.js',
+  ],
   setupFilesAfterEnv: ['<rootDir>/jest-setup.js'],
+  globals: {
+    __DEV__: true,
+  },
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.test.(js|jsx|ts|tsx)',
     '<rootDir>/src/**/?(*.)+(spec|test).(js|jsx|ts|tsx)',
