@@ -40,4 +40,5 @@ android/
 ios/
 
 build*
+*.apk
 repomix-output.xml
